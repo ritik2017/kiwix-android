@@ -949,6 +949,10 @@ public class KiwixMobileActivity extends BaseActivity implements WebViewCallback
     }
   }
 
+  public boolean isHelpPage() {
+    return getCurrentWebView().getUrl().equals("file:///android_asset/help.html");
+  }
+
   public void showHelpPage() {
     getCurrentWebView().loadUrl("file:///android_asset/help.html");
   }
@@ -1240,7 +1244,7 @@ public class KiwixMobileActivity extends BaseActivity implements WebViewCallback
     }
 
     if (!mWebViews.isEmpty() && mWebViews.get(currentWebViewIndex).getUrl() != null &&
-        mWebViews.get(currentWebViewIndex).getUrl().equals("file:///android_asset/help.html") &&
+        isHelpPage() &&
         mWebViews.get(currentWebViewIndex).findViewById(R.id.get_content_card) != null) {
       mWebViews.get(currentWebViewIndex).findViewById(R.id.get_content_card).setEnabled(true);
     }
@@ -1583,7 +1587,7 @@ public class KiwixMobileActivity extends BaseActivity implements WebViewCallback
     refreshBookmarkSymbol(menu);
     refreshNavigationButtons();
 
-    if (getCurrentWebView().getUrl() == null || getCurrentWebView().getUrl().equals("file:///android_asset/help.html")) {
+    if (getCurrentWebView().getUrl() == null || isHelpPage()) {
       menu.findItem(R.id.menu_read_aloud).setVisible(false);
     } else {
       menu.findItem(R.id.menu_read_aloud).setVisible(true);
