@@ -263,6 +263,8 @@ public class DownloadService extends Service {
     notificationManager.notify(notificationID, notification.get(notificationID).build());
     if (DownloadFragment.downloadAdapter != null) {
       DownloadFragment.downloadAdapter.notifyDataSetChanged();
+    }
+    if(downloadFragment.listView != null) {
       downloadFragment.listView.invalidateViews();
     }
   }
@@ -279,6 +281,8 @@ public class DownloadService extends Service {
     notificationManager.notify(notificationID, notification.get(notificationID).build());
     if (DownloadFragment.downloadAdapter != null) {
       DownloadFragment.downloadAdapter.notifyDataSetChanged();
+    }
+    if(downloadFragment.listView != null) {
       downloadFragment.listView.invalidateViews();
     }
 
