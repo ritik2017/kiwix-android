@@ -31,12 +31,12 @@ import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
-import dagger.android.AndroidInjectionModule;
+import dagger.android.support.AndroidSupportInjectionModule;
 import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
-@Module(includes = {ActivityBindingModule.class, AndroidInjectionModule.class})
+@Module(includes = {ActivityBindingModule.class, AndroidSupportInjectionModule.class})
 public class ApplicationModule {
   private final KiwixApplication application;
 

@@ -16,6 +16,7 @@ import org.kiwix.kiwixmobile.main.MainModule;
 import org.kiwix.kiwixmobile.search.SearchActivity;
 import org.kiwix.kiwixmobile.settings.KiwixSettingsActivity;
 import org.kiwix.kiwixmobile.splash.SplashActivity;
+import org.kiwix.kiwixmobile.zim_manager.DownloadModule;
 import org.kiwix.kiwixmobile.zim_manager.ZimManageActivity;
 
 import dagger.Module;
@@ -38,7 +39,7 @@ public abstract class ActivityBindingModule {
   public abstract KiwixSettingsActivity provideKiwixSettingsActivity();
 
   @PerActivity
-  @ContributesAndroidInjector
+  @ContributesAndroidInjector(modules = DownloadModule.class)
   public abstract ZimManageActivity provideZimManageActivity();
 
   @PerActivity
