@@ -1,53 +1,71 @@
-/*
- * Kiwix Android
- * Copyright (C) 2018  Kiwix <android.kiwix.org>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package org.kiwix.kiwixmobile.search;
 
+import android.util.Log;
+
+import org.kiwix.kiwixlib.JNIKiwixSearcher;
 import org.kiwix.kiwixmobile.base.BasePresenter;
-import org.kiwix.kiwixmobile.data.local.dao.RecentSearchDao;
+import org.kiwix.kiwixmobile.data.ZimContentProvider;
+import org.kiwix.kiwixmobile.di.PerActivity;
+import org.kiwix.kiwixmobile.di.qualifiers.IO;
+import org.kiwix.kiwixmobile.di.qualifiers.MainThread;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
-/**
- * Created by srv_twry on 14/2/18.
- */
+import io.reactivex.Scheduler;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.disposables.Disposable;
 
-public class SearchPresenter extends BasePresenter<SearchViewCallback> {
+@PerActivity
+class SearchPresenter extends BasePresenter<SearchContract.View> implements SearchContract.Presenter {
 
-    @Inject
-    RecentSearchDao recentSearchDao;
+  private static final String TAG = "SearchPresenter";
+  private final Scheduler io;
+  private final Scheduler mainThread;
+  private Disposable disposable;
 
-    @Inject
-    SearchPresenter() {}
+  @Inject
+  SearchPresenter(@IO Scheduler io, @MainThread Scheduler mainThread) {
+    this.io = io;
+    this.mainThread = mainThread;
+  }
 
-    @Override
-    public void attachView(SearchViewCallback searchViewCallback) {
-        super.attachView(searchViewCallback);
-    }
+  @Override
+  public void searchArticles(String query, int numberOfArticles) {
+    Single.fromCallable(() -> {
+      List<JNIKiwixSearcher.Result> results = new ArrayList<>();
+      ZimContentProvider.jniSearcher.search(query, numberOfArticles);
+      JNIKiwixSearcher.Result result = ZimContentProvider.jniSearcher.getNextResult();
+      while (result != null) {
+        results.add(result);
+        result = ZimContentProvider.jniSearcher.getNextResult();
+      }
+      return results;
+    })
+        .subscribeOn(io)
+        .observeOn(mainThread)
+        .subscribe(new SingleObserver<List<JNIKiwixSearcher.Result>>() {
+          @Override
+          public void onSubscribe(Disposable d) {
+            if (disposable != null && !disposable.isDisposed()) {
+              compositeDisposable.remove(disposable);
+            }
+            compositeDisposable.add(d);
+            disposable = d;
+          }
 
-    void getRecentSearches() {
-        view.addRecentSearches(recentSearchDao.getRecentSearches());
-    }
+          @Override
+          public void onSuccess(List<JNIKiwixSearcher.Result> results) {
+            view.showResults(results);
+          }
 
-    void saveSearch(String title) {
-        recentSearchDao.saveSearch(title);
-    }
-
-    void deleteSearchString(String search) {
-        recentSearchDao.deleteSearchString(search);
-    }
+          @Override
+          public void onError(Throwable e) {
+            Log.e(TAG, "Error finding results:", e);
+          }
+        });
+  }
 }

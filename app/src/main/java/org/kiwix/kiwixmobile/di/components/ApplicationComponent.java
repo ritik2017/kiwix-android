@@ -26,7 +26,6 @@ import org.kiwix.kiwixmobile.di.modules.NetworkModule;
 import org.kiwix.kiwixmobile.downloader.DownloadService;
 import org.kiwix.kiwixmobile.library.LibraryAdapter;
 import org.kiwix.kiwixmobile.main.KiwixWebView;
-import org.kiwix.kiwixmobile.search.AutoCompleteAdapter;
 import org.kiwix.kiwixmobile.settings.KiwixSettingsActivity;
 
 import javax.inject.Singleton;
@@ -52,6 +51,4 @@ public interface ApplicationComponent {
   void inject(KiwixWebView kiwixWebView);
 
   void inject(KiwixSettingsActivity.PrefsFragment prefsFragment);
-
-  void inject(AutoCompleteAdapter autoCompleteAdapter);
 }

@@ -14,6 +14,7 @@ import org.kiwix.kiwixmobile.language.LanguageModule;
 import org.kiwix.kiwixmobile.main.MainActivity;
 import org.kiwix.kiwixmobile.main.MainModule;
 import org.kiwix.kiwixmobile.search.SearchActivity;
+import org.kiwix.kiwixmobile.search.SearchModule;
 import org.kiwix.kiwixmobile.settings.KiwixSettingsActivity;
 import org.kiwix.kiwixmobile.splash.SplashActivity;
 import org.kiwix.kiwixmobile.zim_manager.DownloadModule;
@@ -43,7 +44,7 @@ public abstract class ActivityBindingModule {
   public abstract ZimManageActivity provideZimManageActivity();
 
   @PerActivity
-  @ContributesAndroidInjector
+  @ContributesAndroidInjector(modules = SearchModule.class)
   public abstract SearchActivity provideSearchActivity();
 
   @PerActivity

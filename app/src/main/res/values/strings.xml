@@ -236,4 +236,6 @@
   </string-array>
   <string name="bookmarks_from_current_book">Bookmarks from current book</string>
   <string name="search_bookmarks">Search bookmarks</string>
+  <string name="results">Results</string>
+  <string name="filter">Filter</string>
 </resources>
