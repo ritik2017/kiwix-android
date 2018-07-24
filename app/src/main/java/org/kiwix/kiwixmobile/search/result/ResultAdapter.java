@@ -1,5 +1,6 @@
 package org.kiwix.kiwixmobile.search.result;
 
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 
 import org.kiwix.kiwixlib.JNIKiwixSearcher;
 import org.kiwix.kiwixmobile.R;
+import org.kiwix.kiwixmobile.data.ZimContentProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,9 +20,12 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
+import static org.kiwix.kiwixmobile.utils.StyleUtils.fromHtml;
+
 class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.Item> {
 
   private static final String TAG = "ResultAdapter";
+  private static final String HTML_IMAGE_TAG = "img src=\"";
   private List<JNIKiwixSearcher.Result> results = new ArrayList<>();
 
   void showResults(List<JNIKiwixSearcher.Result> results) {
@@ -43,9 +48,15 @@ class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.Item> {
     Log.d(TAG, "snipped: " + result.getSnippet());
     Log.d(TAG, "title: " + result.getTitle());
     Log.d(TAG, "url: " + result.getUrl());
-    holder.title.setText(result.getTitle());
-    holder.description.setText(result.getSnippet());
-    holder.content.setText(result.getContent());
+    holder.title.setText(fromHtml(result.getTitle()));
+    holder.description.setText(fromHtml(result.getSnippet()));
+    String content = result.getContent();
+    int start = content.indexOf(HTML_IMAGE_TAG);
+    if (start >= 0) {
+      start = content.indexOf("/", start) + 1;
+      holder.favicon.setImageURI(Uri.parse((ZimContentProvider.CONTENT_URI +
+          content.substring(start, content.indexOf("\"", start)))));
+    }
   }
 
   @Override
@@ -60,8 +71,6 @@ class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.Item> {
     TextView title;
     @BindView(R.id.item_search_result_description)
     TextView description;
-    @BindView(R.id.item_search_result_content)
-    TextView content;
 
     Item(View itemView) {
       super(itemView);

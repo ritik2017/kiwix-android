@@ -44,9 +44,9 @@ class SearchPagerAdapter extends FragmentPagerAdapter {
   public CharSequence getPageTitle(int position) {
     switch (position) {
       case 0:
-        activity.getString(R.string.results);
+        return activity.getString(R.string.results);
       case 1:
-        activity.getString(R.string.filter);
+        return activity.getString(R.string.filter);
     }
     return null;
   }

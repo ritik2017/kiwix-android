@@ -11,8 +11,9 @@
 
   <ImageView
     android:id="@+id/item_search_result_favicon"
-    android:layout_width="40dp"
-    android:layout_height="40dp"
+    android:layout_width="56dp"
+    android:layout_height="56dp"
+    android:layout_marginTop="8dp"
     android:contentDescription="@string/favicon"
     app:layout_constraintEnd_toStartOf="@id/item_search_result_title"
     app:layout_constraintHorizontal_chainStyle="packed"
@@ -26,28 +27,21 @@
     android:layout_height="wrap_content"
     android:layout_marginLeft="@dimen/activity_horizontal_margin"
     android:layout_marginStart="@dimen/activity_horizontal_margin"
+    android:alpha="0.87"
     android:textAppearance="?android:attr/textAppearanceMedium"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toEndOf="@id/item_search_result_favicon"
-    app:layout_constraintTop_toTopOf="@id/item_search_result_favicon"
+    app:layout_constraintTop_toTopOf="parent"
     tools:text="Wikipedia" />
 
   <TextView
     android:id="@+id/item_search_result_description"
     android:layout_width="0dp"
     android:layout_height="wrap_content"
+    android:alpha="0.54"
     android:textAppearance="?android:attr/textAppearanceSmall"
     app:layout_constraintEnd_toEndOf="parent"
     app:layout_constraintStart_toStartOf="@id/item_search_result_title"
     app:layout_constraintTop_toBottomOf="@id/item_search_result_title"
     tools:text="Encyclopedia" />
-
-  <TextView
-    android:id="@+id/item_search_result_content"
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:textColor="@color/secondary_text"
-    app:layout_constraintEnd_toEndOf="@id/item_search_result_description"
-    app:layout_constraintStart_toStartOf="@id/item_search_result_description"
-    app:layout_constraintTop_toBottomOf="@id/item_search_result_description" />
 </android.support.constraint.ConstraintLayout>

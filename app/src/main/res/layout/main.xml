@@ -203,7 +203,7 @@
       android:id="@+id/toolbar"
       android:layout_width="match_parent"
       android:layout_height="?actionBarSize"
-      android:background="?colorPrimaryDark"
+      android:background="?colorPrimary"
       app:popupTheme="@style/AppTheme.PopupOverlay"
       app:theme="@style/AppTheme.AppBarOverlay" />
 
