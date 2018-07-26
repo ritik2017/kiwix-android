@@ -115,7 +115,7 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES;
 import static org.kiwix.kiwixmobile.main.TableDrawerAdapter.DocumentSection;
 import static org.kiwix.kiwixmobile.main.TableDrawerAdapter.TableClickListener;
-import static org.kiwix.kiwixmobile.search.SearchActivity.EXTRA_SEARCH_IN_TEXT;
+import static org.kiwix.kiwixmobile.search.SearchActivity.EXTRA_FIND_IN_PAGE;
 import static org.kiwix.kiwixmobile.utils.Constants.BOOKMARK_CHOSEN_REQUEST;
 import static org.kiwix.kiwixmobile.utils.Constants.EXTRA_CHOSE_X_TITLE;
 import static org.kiwix.kiwixmobile.utils.Constants.EXTRA_CHOSE_X_URL;
@@ -139,7 +139,6 @@ import static org.kiwix.kiwixmobile.utils.Constants.TAG_CURRENT_ARTICLES;
 import static org.kiwix.kiwixmobile.utils.Constants.TAG_CURRENT_FILE;
 import static org.kiwix.kiwixmobile.utils.Constants.TAG_CURRENT_POSITIONS;
 import static org.kiwix.kiwixmobile.utils.Constants.TAG_CURRENT_TAB;
-import static org.kiwix.kiwixmobile.utils.Constants.TAG_FILE_SEARCHED;
 import static org.kiwix.kiwixmobile.utils.Constants.TAG_KIWIX;
 import static org.kiwix.kiwixmobile.utils.StyleUtils.dialogStyle;
 
@@ -413,9 +412,9 @@ public class MainActivity extends BaseActivity implements WebViewCallback,
     if (i.getBooleanExtra(EXTRA_LIBRARY, false)) {
       manageZimFiles(2);
     }
-    if (i.hasExtra(TAG_FILE_SEARCHED)) {
-      searchForTitle(i.getStringExtra(TAG_FILE_SEARCHED));
+    if (i.hasExtra(EXTRA_FIND_IN_PAGE)) {
       selectTab(mWebViews.size() - 1);
+      findInPage(i.getStringExtra(EXTRA_FIND_IN_PAGE));
     }
     if (i.hasExtra(EXTRA_CHOSE_X_URL)) {
       newTab();
@@ -1402,44 +1401,12 @@ public class MainActivity extends BaseActivity implements WebViewCallback,
     }
   }
 
-  public void searchForTitle(String title) {
-    String articleUrl;
-
-    if (title.startsWith("A/")) {
-      articleUrl = title;
-    } else {
-      articleUrl = ZimContentProvider.getPageUrlFromTitle(title);
-    }
-    openArticle(articleUrl);
-  }
-
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
     Log.i(TAG_KIWIX, "Intent data: " + data);
 
     switch (requestCode) {
-      case REQUEST_FILE_SEARCH:
-        if (resultCode == RESULT_OK) {
-          String title =
-              data.getStringExtra(TAG_FILE_SEARCHED).replace("<b>", "").replace("</b>", "");
-          boolean isSearchInText = data.getBooleanExtra(EXTRA_SEARCH_IN_TEXT, false);
-          if (isSearchInText) {
-            //if the search is localized trigger find in page UI.
-            KiwixWebView webView = getCurrentWebView();
-            compatCallback.setActive();
-            compatCallback.setWebView(webView);
-            startSupportActionMode(compatCallback);
-            compatCallback.setText(title);
-            compatCallback.findAll();
-            compatCallback.showSoftInput();
-          } else {
-            searchForTitle(title);
-          }
-        } else { //TODO: Inform the User
-          Log.w(TAG_KIWIX, "Unhandled search failure");
-        }
-        break;
       case REQUEST_PREFERENCES:
         if (resultCode == RESULT_RESTART) {
           finish();
@@ -1453,6 +1420,14 @@ public class MainActivity extends BaseActivity implements WebViewCallback,
         loadPrefs();
         break;
 
+      case REQUEST_FILE_SEARCH:
+        if (resultCode == RESULT_OK) {
+          String title = data.getStringExtra(EXTRA_FIND_IN_PAGE);
+          if (title != null) {
+            findInPage(title);
+            return;
+          }
+        }
       case BOOKMARK_CHOSEN_REQUEST:
       case REQUEST_FILE_SELECT:
       case REQUEST_HISTORY_ITEM_CHOSEN:
@@ -1496,6 +1471,16 @@ public class MainActivity extends BaseActivity implements WebViewCallback,
     }
 
     super.onActivityResult(requestCode, resultCode, data);
+  }
+
+  private void findInPage(String query) {
+    KiwixWebView webView = getCurrentWebView();
+    compatCallback.setActive();
+    compatCallback.setWebView(webView);
+    startSupportActionMode(compatCallback);
+    compatCallback.setText(query);
+    compatCallback.findAll();
+    compatCallback.showSoftInput();
   }
 
   @Override

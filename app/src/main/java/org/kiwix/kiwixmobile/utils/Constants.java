@@ -83,7 +83,6 @@ public final class Constants {
     public static final String PREF_SHOW_INTRO = "showIntro";
 
     // Tags
-    public static final String TAG_FILE_SEARCHED = "searchedarticle";
 
     public static final String TAG_CURRENT_FILE = "currentzimfile";
 
@@ -119,8 +118,6 @@ public final class Constants {
     public static final String EXTRA_NOTIFICATION_ID = "notificationID";
 
     public static final String EXTRA_WEBVIEWS_LIST = "webviewsList";
-
-    public static final String EXTRA_SEARCH_TEXT = "searchText";
 
     // Notification Channel Constants
     public static final String ONGOING_DOWNLOAD_CHANNEL_ID = "ongoing_downloads_channel_id";

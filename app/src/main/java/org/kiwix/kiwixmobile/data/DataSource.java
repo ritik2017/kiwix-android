@@ -5,6 +5,7 @@ import org.kiwix.kiwixmobile.data.local.entity.History;
 import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
 import org.kiwix.kiwixmobile.models.Language;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.Completable;
@@ -15,6 +16,9 @@ import io.reactivex.Single;
  */
 
 public interface DataSource {
+
+  Single<ArrayList<LibraryNetworkEntity.Book>> getBooks();
+
   Single<List<LibraryNetworkEntity.Book>> getLanguageCategorizedBooks();
 
   Completable saveBook(LibraryNetworkEntity.Book book);

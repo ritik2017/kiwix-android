@@ -17,7 +17,9 @@
  */
 package org.kiwix.kiwixmobile.base;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -70,5 +72,15 @@ public abstract class BaseActivity extends AppCompatActivity implements HasSuppo
   @Override
   public AndroidInjector<Fragment> supportFragmentInjector() {
     return fragmentDispatchingAndroidInjector;
+  }
+
+  public boolean shouldStartNewActivity() {
+    int value;
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      value = Settings.System.getInt(getContentResolver(), Settings.System.ALWAYS_FINISH_ACTIVITIES, 0);
+    } else {
+      value = Settings.System.getInt(getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0);
+    }
+    return value == 1;
   }
 }

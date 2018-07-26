@@ -56,6 +56,13 @@ public class Repository implements DataSource {
   }
 
   @Override
+  public Single<ArrayList<LibraryNetworkEntity.Book>> getBooks() {
+    return Single.just(bookDao.getBooks())
+        .subscribeOn(io)
+        .observeOn(mainThread);
+  }
+
+  @Override
   public Single<List<LibraryNetworkEntity.Book>> getLanguageCategorizedBooks() {
     return Observable.fromIterable(bookDao.getBooks())
         .toSortedList((book1, book2) -> book1.getLanguage().compareToIgnoreCase(book2.getLanguage()) == 0 ?

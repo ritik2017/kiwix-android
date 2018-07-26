@@ -4,10 +4,12 @@ import android.util.Log;
 
 import org.kiwix.kiwixlib.JNIKiwixSearcher;
 import org.kiwix.kiwixmobile.base.BasePresenter;
+import org.kiwix.kiwixmobile.data.DataSource;
 import org.kiwix.kiwixmobile.data.ZimContentProvider;
 import org.kiwix.kiwixmobile.di.PerActivity;
 import org.kiwix.kiwixmobile.di.qualifiers.IO;
 import org.kiwix.kiwixmobile.di.qualifiers.MainThread;
+import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,12 +25,14 @@ import io.reactivex.disposables.Disposable;
 class SearchPresenter extends BasePresenter<SearchContract.View> implements SearchContract.Presenter {
 
   private static final String TAG = "SearchPresenter";
+  private final DataSource dataSource;
   private final Scheduler io;
   private final Scheduler mainThread;
   private Disposable disposable;
 
   @Inject
-  SearchPresenter(@IO Scheduler io, @MainThread Scheduler mainThread) {
+  SearchPresenter(DataSource dataSource, @IO Scheduler io, @MainThread Scheduler mainThread) {
+    this.dataSource = dataSource;
     this.io = io;
     this.mainThread = mainThread;
   }
@@ -65,6 +69,27 @@ class SearchPresenter extends BasePresenter<SearchContract.View> implements Sear
           @Override
           public void onError(Throwable e) {
             Log.e(TAG, "Error finding results:", e);
+          }
+        });
+  }
+
+  @Override
+  public void loadBooks() {
+    dataSource.getBooks()
+        .subscribe(new SingleObserver<ArrayList<LibraryNetworkEntity.Book>>() {
+          @Override
+          public void onSubscribe(Disposable d) {
+            compositeDisposable.add(d);
+          }
+
+          @Override
+          public void onSuccess(ArrayList<LibraryNetworkEntity.Book> books) {
+            view.setBooks(books);
+          }
+
+          @Override
+          public void onError(Throwable e) {
+            Log.e(TAG, "Unable to load books", e);
           }
         });
   }

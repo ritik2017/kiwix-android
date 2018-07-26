@@ -26,6 +26,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
@@ -62,39 +63,23 @@ public class ZimContentProvider extends ContentProvider {
   public static final Uri CONTENT_URI = Uri.parse("content://" + BuildConfig.APPLICATION_ID + ".zim.base/");
 
   public static final Uri UI_URI = Uri.parse("content://org.kiwix.ui/");
-
-  public static String originalFileName = "";
-
-  public static Boolean canIterate = true;
-
   private static final String VIDEO_PATTERN = "([^\\s]+(\\.(?i)(3gp|mp4|m4a|webm|mkv|ogg|ogv))$)";
-
   private static final Pattern PATTERN = Pattern.compile(VIDEO_PATTERN, Pattern.CASE_INSENSITIVE);
-
+  private static final ArrayList<String> zimFilePaths = new ArrayList<>();
+  public static JNIKiwixSearcher jniSearcher;
+  public static String originalFileName = "";
+  public static Boolean canIterate = true;
   public static String zimFileName;
-
+  private static ArrayList<String> listedEntries;
+  private static JNIKiwixReader currentJNIReader;
   @Inject
   public JNIKiwix jniKiwix;
 
-  public static JNIKiwixReader currentJNIReader;
-
-  public static JNIKiwixSearcher jniSearcher;
-
-  private static ArrayList<String> listedEntries;
-
-  public void setupDagger() {
-    KiwixApplication.getApplicationComponent().inject(this);
-    setIcuDataDirectory();
-    jniSearcher = new JNIKiwixSearcher();
-    listedEntries = new ArrayList<>();
-  }
-
-
-  private static String getFulltextIndexPath(String file){
+  private static String getFulltextIndexPath(String file) {
     String[] names = {file, file};
 
     /* File might be a ZIM chunk like foobar.zimaa */
-    if (!names[0].substring(names[0].length() - 3).equals("zim")){
+    if (!names[0].substring(names[0].length() - 3).equals("zim")) {
       names[0] = names[0].substring(0, names[0].length() - 2);
     }
 
@@ -116,14 +101,15 @@ public class ZimContentProvider extends ContentProvider {
     if (!new File(fileName).exists()) {
       Log.e(TAG_KIWIX, "Unable to find the ZIM file " + fileName);
       zimFileName = null;
-      return zimFileName;
+      return null;
     }
     try {
       JNIKiwixReader reader = new JNIKiwixReader(fileName);
       Log.i(TAG_KIWIX, "Opening ZIM file " + fileName);
-      if(!listedEntries.contains(reader.getId())) {
+      if (!listedEntries.contains(reader.getId())) {
         listedEntries.add(reader.getId());
         jniSearcher.addKiwixReader(reader);
+        zimFilePaths.add(fileName);
       }
       currentJNIReader = reader;
       zimFileName = fileName;
@@ -132,6 +118,13 @@ public class ZimContentProvider extends ContentProvider {
       zimFileName = null;
     }
     return zimFileName;
+  }
+
+  public synchronized static String getZimFilePath(int readerIndex) {
+    if (readerIndex < zimFilePaths.size()) {
+      return zimFilePaths.get(readerIndex);
+    }
+    return "";
   }
 
   public static String getZimFile() {
@@ -239,11 +232,8 @@ public class ZimContentProvider extends ContentProvider {
   }
 
   public static boolean searchSuggestions(String prefix, int count) {
-    if (currentJNIReader == null || zimFileName == null) {
-      return false;
-    } else {
-      return currentJNIReader.searchSuggestions(prefix, count);
-    }
+    return currentJNIReader != null && zimFileName != null &&
+        currentJNIReader.searchSuggestions(prefix, count);
   }
 
   public static String getNextSuggestion() {
@@ -292,21 +282,20 @@ public class ZimContentProvider extends ContentProvider {
         icuDir.mkdirs();
       }
       String[] icuFileNames = context.getAssets().list("icu");
-      for (int i=0; i<icuFileNames.length; i++) {
-          String icuFileName = icuFileNames[i];
-          File icuDataFile = new File(icuDir, icuFileName);
-          if (!icuDataFile.exists()) {
-              InputStream in = context.getAssets().open("icu/"+icuFileName);
-              OutputStream out = new FileOutputStream(icuDataFile);
-              byte[] buf = new byte[1024];
-              int len;
-              while ((len = in.read(buf)) > 0) {
-                  out.write(buf, 0, len);
-              }
-              in.close();
-              out.flush();
-              out.close();
+      for (String icuFileName : icuFileNames) {
+        File icuDataFile = new File(icuDir, icuFileName);
+        if (!icuDataFile.exists()) {
+          InputStream in = context.getAssets().open("icu/" + icuFileName);
+          OutputStream out = new FileOutputStream(icuDataFile);
+          byte[] buf = new byte[1024];
+          int len;
+          while ((len = in.read(buf)) > 0) {
+            out.write(buf, 0, len);
           }
+          in.close();
+          out.flush();
+          out.close();
+        }
       }
       return icuDir.getAbsolutePath();
     } catch (Exception e) {
@@ -331,6 +320,13 @@ public class ZimContentProvider extends ContentProvider {
     return filePath;
   }
 
+  public void setupDagger() {
+    KiwixApplication.getApplicationComponent().inject(this);
+    setIcuDataDirectory();
+    jniSearcher = new JNIKiwixSearcher();
+    listedEntries = new ArrayList<>();
+  }
+
   @Override
   public boolean onCreate() {
     setupDagger();
@@ -338,16 +334,16 @@ public class ZimContentProvider extends ContentProvider {
   }
 
   @Override
-  public String getType(Uri uri) {
+  public String getType(@NonNull Uri uri) {
     String mimeType;
 
-    // This is the code which makes a guess based on the file extenstion
+    // This is the code which makes a guess based on the file extension
     String extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString().toLowerCase());
     mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
 
     // This is the code which retrieve the mimeType from the libzim
     // "slow" and still bugyy
-    if (mimeType.isEmpty()) {
+    if (mimeType != null && mimeType.isEmpty()) {
       String t = uri.toString();
       int pos = uri.toString().indexOf(CONTENT_URI.toString());
       if (pos != -1) {
@@ -371,7 +367,7 @@ public class ZimContentProvider extends ContentProvider {
   }
 
   @Override
-  public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+  public ParcelFileDescriptor openFile(@NonNull Uri uri, @NonNull String mode) throws FileNotFoundException {
 
     Matcher matcher = PATTERN.matcher(uri.toString());
     if (matcher.matches()) {
@@ -425,24 +421,24 @@ public class ZimContentProvider extends ContentProvider {
   }
 
   @Override
-  public Cursor query(Uri url, String[] projection, String selection,
+  public Cursor query(@NonNull Uri url, String[] projection, String selection,
                       String[] selectionArgs, String sort) {
     throw new RuntimeException("Operation not supported");
   }
 
   @Override
-  public Uri insert(Uri uri, ContentValues initialValues) {
+  public Uri insert(@NonNull Uri uri, ContentValues initialValues) {
     throw new RuntimeException("Operation not supported");
   }
 
   @Override
-  public int update(Uri uri, ContentValues values, String where,
+  public int update(@NonNull Uri uri, ContentValues values, String where,
                     String[] whereArgs) {
     throw new RuntimeException("Operation not supported");
   }
 
   @Override
-  public int delete(Uri uri, String where, String[] whereArgs) {
+  public int delete(@NonNull Uri uri, String where, String[] whereArgs) {
     throw new RuntimeException("Operation not supported");
   }
 
@@ -458,13 +454,11 @@ public class ZimContentProvider extends ContentProvider {
 
   static class TransferThread extends Thread {
 
-    String articleZimUrl;
+    final String articleZimUrl;
+    final OutputStream out;
+    final JNIKiwixReader currentJNIReader;
 
-    OutputStream out;
-
-    JNIKiwixReader currentJNIReader;
-
-    TransferThread(JNIKiwixReader currentJNIReader, Uri articleUri, OutputStream out) throws IOException {
+    TransferThread(JNIKiwixReader currentJNIReader, Uri articleUri, OutputStream out) {
       this.currentJNIReader = currentJNIReader;
       Log.d(TAG_KIWIX, "Retrieving: " + articleUri.toString());
 

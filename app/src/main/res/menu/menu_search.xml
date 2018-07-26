@@ -7,11 +7,11 @@
     android:iconifiedByDefault="false"
     android:title="@string/menu_search"
     app:actionViewClass="android.support.v7.widget.SearchView"
-    app:showAsAction="always|collapseActionView" />
+    app:showAsAction="ifRoom|collapseActionView" />
 
   <item
-    android:id="@+id/menu_search_in_text"
+    android:id="@+id/menu_find_in_page"
     android:title="@string/menu_searchintext"
-    app:showAsAction="ifRoom|withText" />
+    app:showAsAction="always|withText" />
 
 </menu>

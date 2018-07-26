@@ -3,7 +3,6 @@ package org.kiwix.kiwixmobile.history;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.view.ActionMode;
@@ -205,13 +204,12 @@ public class HistoryActivity extends BaseActivity implements HistoryContract.Vie
       if (!history.getZimFilePath().equals(ZimContentProvider.getZimFile())) {
         intent.setData(Uri.fromFile(new File(history.getZimFilePath())));
       }
-      if (Settings.System.getInt(getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1) {
+      if (shouldStartNewActivity()) {
         startActivity(intent);
-        finish();
       } else {
         setResult(RESULT_OK, intent);
-        finish();
       }
+      finish();
     } else {
       toggleSelection(favicon, history);
     }
