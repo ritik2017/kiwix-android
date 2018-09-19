@@ -37,7 +37,6 @@ import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.R;
 import org.kiwix.kiwixmobile.database.BookDao;
 import org.kiwix.kiwixmobile.database.NetworkLanguageDao;
-import org.kiwix.kiwixmobile.downloader.DownloadFragment;
 import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
 import org.kiwix.kiwixmobile.utils.BookUtils;
 import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryFragment;
@@ -147,7 +146,7 @@ public class LibraryAdapter extends BaseAdapter {
       holder.creator.setText(book.getCreator());
       holder.publisher.setText(book.getPublisher());
       holder.date.setText(book.getDate());
-      holder.size.setText(createGbString(book.getSize()));
+      holder.size.setText(createGbString(Long.parseLong(book.getSize())));
       holder.fileName.setText(parseURL(context, book.getUrl()));
       holder.favicon.setImageBitmap(createBitmapFromEncodedString(book.getFavicon(), context));
 
@@ -241,10 +240,10 @@ public class LibraryAdapter extends BaseAdapter {
       ArrayList<Book> books = bookDao.getBooks();
       listItems.clear();
       if (s.length() == 0) {
+        // TODO: check we are nto currently downloading
         List<Book> selectedLanguages = Observable.fromIterable(allBooks)
             .filter(LibraryAdapter.this::languageActive)
             .filter(book -> !books.contains(book))
-            .filter(book -> !DownloadFragment.mDownloads.values().contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .toList()
@@ -253,7 +252,6 @@ public class LibraryAdapter extends BaseAdapter {
         List<Book> unselectedLanguages = Observable.fromIterable(allBooks)
             .filter(book -> !languageActive(book))
             .filter(book -> !books.contains(book))
-            .filter(book -> !DownloadFragment.mDownloads.values().contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .toList()
@@ -267,7 +265,6 @@ public class LibraryAdapter extends BaseAdapter {
         List<Book> selectedLanguages = Observable.fromIterable(allBooks)
             .filter(LibraryAdapter.this::languageActive)
             .filter(book -> !books.contains(book))
-            .filter(book -> !DownloadFragment.mDownloads.values().contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .flatMap(book -> getMatches(book, s.toString()))
@@ -279,7 +276,6 @@ public class LibraryAdapter extends BaseAdapter {
         List<Book> unselectedLanguages = Observable.fromIterable(allBooks)
             .filter(book -> !languageActive(book))
             .filter(book -> !books.contains(book))
-            .filter(book -> !DownloadFragment.mDownloads.values().contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .flatMap(book -> getMatches(book, s.toString()))
@@ -368,11 +364,11 @@ public class LibraryAdapter extends BaseAdapter {
   }
 
   // Create a string that represents the size of the zim file in a human readable way
-  public static String createGbString(String megaByte) {
+  public static String createGbString(long megaByte) {
 
-    int size = 0;
+    long size = 0;
     try {
-      size = Integer.parseInt(megaByte);
+      size = megaByte;
     } catch (NumberFormatException e) {
       e.printStackTrace();
     }

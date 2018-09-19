@@ -104,7 +104,7 @@ public class BookmarksActivity extends BaseActivity
     bookmarksList.setMultiChoiceModeListener(actionModeListener);
     bookmarksList.setOnItemClickListener(this);
 
-    presenter.attachView(this);
+    presenter.attachView(this, this);
     presenter.loadBookmarks();
   }
 
@@ -211,7 +211,6 @@ public class BookmarksActivity extends BaseActivity
     bookmarkDeleteSnackbar.setActionTextColor(getResources().getColor(R.color.white));
     bookmarkDeleteSnackbar.show();
   }
-
 
   class ActionModeListener implements AbsListView.MultiChoiceModeListener {
     private ArrayList<String> selected = new ArrayList<>();

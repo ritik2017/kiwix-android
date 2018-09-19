@@ -27,6 +27,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.ZimContentProvider;
 import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
 
@@ -37,6 +38,7 @@ import java.util.Vector;
 
 import eu.mhutti1.utils.storage.StorageDevice;
 import eu.mhutti1.utils.storage.StorageDeviceUtils;
+import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
 
 import static org.kiwix.kiwixmobile.utils.Constants.TAG_KIWIX;
 
@@ -171,8 +173,8 @@ public class FileSearch {
     return files.toArray(arr);
   }
 
-  public static synchronized LibraryNetworkEntity.Book fileToBook(String filePath) {
-    LibraryNetworkEntity.Book book = null;
+  public static synchronized Zim fileToZim(String filePath) {
+    Book book = null;
 
     if (ZimContentProvider.zimFileName != null) {
       ZimContentProvider.originalFileName = ZimContentProvider.zimFileName;
@@ -206,8 +208,10 @@ public class FileSearch {
       ZimContentProvider.setZimFile(ZimContentProvider.originalFileName);
     }
     ZimContentProvider.originalFileName = "";
-
-    return book;
+    if (book == null) {
+      return null;
+    }
+    return new Zim(book, new File(filePath));
   }
 
   // Fill fileList with files found in the specific directory
@@ -222,14 +226,14 @@ public class FileSearch {
 
   // Callback that a new file has been found
   public void onFileFound(String filePath) {
-    LibraryNetworkEntity.Book book = fileToBook(filePath);
+    Zim zim = fileToZim(filePath);
 
-    if (book != null)
-      listener.onBookFound(book);
+    if (zim != null)
+      listener.onZimFound(zim);
   }
 
   public interface ResultListener {
-    void onBookFound(LibraryNetworkEntity.Book book);
+    void onZimFound(Zim zim);
 
     void onScanCompleted();
   }

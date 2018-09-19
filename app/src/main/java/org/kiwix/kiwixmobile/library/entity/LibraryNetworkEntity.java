@@ -151,6 +151,10 @@ public class LibraryNetworkEntity {
       return this.bookName;
     }
 
+    public String getTags() {
+      return this.tags;
+    }
+
     public String getSize() {
       return this.size;
     }

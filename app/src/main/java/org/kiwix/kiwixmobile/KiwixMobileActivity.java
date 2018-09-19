@@ -116,7 +116,6 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES;
 import static org.kiwix.kiwixmobile.TableDrawerAdapter.DocumentSection;
 import static org.kiwix.kiwixmobile.TableDrawerAdapter.TableClickListener;
-import static org.kiwix.kiwixmobile.downloader.ChunkUtils.getFileName;
 import static org.kiwix.kiwixmobile.search.SearchActivity.EXTRA_SEARCH_IN_TEXT;
 import static org.kiwix.kiwixmobile.utils.Constants.BOOKMARK_CHOSEN_REQUEST;
 import static org.kiwix.kiwixmobile.utils.Constants.CONTACT_EMAIL_ADDRESS;
@@ -149,6 +148,7 @@ import static org.kiwix.kiwixmobile.utils.Constants.TAG_KIWIX;
 import static org.kiwix.kiwixmobile.utils.LanguageUtils.getResourceString;
 import static org.kiwix.kiwixmobile.utils.StyleUtils.dialogStyle;
 import static org.kiwix.kiwixmobile.utils.UpdateUtils.reformatProviderUrl;
+import static org.kiwix.kiwixmobile.utils.files.FileUtils.getFileName;
 
 public class KiwixMobileActivity extends BaseActivity implements WebViewCallback {
 
@@ -482,7 +482,6 @@ public class KiwixMobileActivity extends BaseActivity implements WebViewCallback
     }
     if (i.hasExtra(EXTRA_ZIM_FILE)) {
       File file = new File(getFileName(i.getStringExtra(EXTRA_ZIM_FILE)));
-      LibraryFragment.mService.cancelNotification(i.getIntExtra(EXTRA_NOTIFICATION_ID, 0));
       Uri uri = Uri.fromFile(file);
 
       finish();

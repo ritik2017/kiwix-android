@@ -46,10 +46,9 @@ import android.widget.Toast;
 import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.KiwixMobileActivity;
 import org.kiwix.kiwixmobile.R;
+import org.kiwix.kiwixmobile.base.BaseActivity;
 import org.kiwix.kiwixmobile.base.BaseFragment;
-import org.kiwix.kiwixmobile.downloader.DownloadFragment;
-import org.kiwix.kiwixmobile.downloader.DownloadIntent;
-import org.kiwix.kiwixmobile.downloader.DownloadService;
+import org.kiwix.kiwixmobile.downloader.KiwixDownloadService;
 import org.kiwix.kiwixmobile.library.LibraryAdapter;
 import org.kiwix.kiwixmobile.utils.NetworkUtils;
 import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
@@ -71,7 +70,6 @@ import eu.mhutti1.utils.storage.StorageDevice;
 import eu.mhutti1.utils.storage.support.StorageSelectDialog;
 
 import static android.view.View.GONE;
-import static org.kiwix.kiwixmobile.downloader.DownloadService.KIWIX_ROOT;
 import static org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
 import static org.kiwix.kiwixmobile.utils.Constants.EXTRA_BOOK;
 
@@ -93,13 +91,7 @@ public class LibraryFragment extends BaseFragment
 
   private ArrayList<Book> books = new ArrayList<>();
 
-  public static DownloadService mService = new DownloadService();
-
-  private boolean mBound;
-
   public LibraryAdapter libraryAdapter;
-
-  private DownloadServiceConnection mConnection = new DownloadServiceConnection();
 
   @Inject
   ConnectivityManager conMan;
@@ -125,7 +117,7 @@ public class LibraryFragment extends BaseFragment
     TestingUtils.bindResource(LibraryFragment.class);
     llLayout = (LinearLayout) inflater.inflate(R.layout.activity_library, container, false);
     ButterKnife.bind(this, llLayout);
-    presenter.attachView(this);
+    presenter.attachView(this, getContext());
 
     networkText = llLayout.findViewById(R.id.network_text);
 
@@ -133,9 +125,6 @@ public class LibraryFragment extends BaseFragment
     swipeRefreshLayout.setOnRefreshListener(() -> refreshFragment());
     libraryAdapter = new LibraryAdapter(super.getContext());
     libraryList.setAdapter(libraryAdapter);
-
-    DownloadService.setDownloadFragment(faActivity.mSectionsPagerAdapter.getDownloadFragment());
-
 
     NetworkInfo network = conMan.getActiveNetworkInfo();
     if (network == null || !network.isConnected()) {
@@ -249,96 +238,71 @@ public class LibraryFragment extends BaseFragment
   }
 
   @Override
-  public void onDestroyView() {
-    super.onDestroyView();
-    if (mBound && super.getActivity() != null) {
-      super.getActivity().unbindService(mConnection.downloadServiceInterface);
-      mBound = false;
-    }
-  }
-
-  @Override
   public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
     if (!libraryAdapter.isDivider(position)) {
-      if (getSpaceAvailable()
-          < Long.parseLong(((Book) (parent.getAdapter().getItem(position))).getSize()) * 1024f) {
-        Toast.makeText(super.getActivity(), getString(R.string.download_no_space)
-            + "\n" + getString(R.string.space_available) + " "
-            + LibraryUtils.bytesToHuman(getSpaceAvailable()), Toast.LENGTH_LONG).show();
-        Snackbar snackbar = Snackbar.make(libraryList,
-            getString(R.string.download_change_storage),
-            Snackbar.LENGTH_LONG)
-            .setAction(getString(R.string.open), v -> {
-              FragmentManager fm = getFragmentManager();
-              StorageSelectDialog dialogFragment = new StorageSelectDialog();
-              Bundle b = new Bundle();
-              b.putString(StorageSelectDialog.STORAGE_DIALOG_INTERNAL, getResources().getString(R.string.internal_storage));
-              b.putString(StorageSelectDialog.STORAGE_DIALOG_EXTERNAL, getResources().getString(R.string.external_storage));
-              b.putInt(StorageSelectDialog.STORAGE_DIALOG_THEME, StyleUtils.dialogStyle());
-              dialogFragment.setArguments(b);
-              dialogFragment.setOnSelectListener(this);
-              dialogFragment.show(fm, getResources().getString(R.string.pref_storage));
-            });
-        snackbar.setActionTextColor(Color.WHITE);
-        snackbar.show();
-        return;
-      }
-
-      if (DownloadFragment.mDownloadFiles
-          .containsValue(KIWIX_ROOT + StorageUtils.getFileNameFromUrl(((Book) parent.getAdapter()
-              .getItem(position)).getUrl()))) {
-        Toast.makeText(super.getActivity(), getString(R.string.zim_already_downloading), Toast.LENGTH_LONG)
-            .show();
-      } else {
-
-        NetworkInfo network = conMan.getActiveNetworkInfo();
-        if (network == null || !network.isConnected()) {
-          Toast.makeText(super.getActivity(), getString(R.string.no_network_connection), Toast.LENGTH_LONG)
-              .show();
-          return;
-        }
-
-        if (KiwixMobileActivity.wifiOnly && !NetworkUtils.isWiFi(getContext())) {
-          new AlertDialog.Builder(getContext())
-              .setTitle(R.string.wifi_only_title)
-              .setMessage(R.string.wifi_only_msg)
-              .setPositiveButton(R.string.yes, (dialog, i) -> {
-                sharedPreferenceUtil.putPrefWifiOnly(false);
-                KiwixMobileActivity.wifiOnly = false;
-                downloadFile((Book) parent.getAdapter().getItem(position));
-              })
-              .setNegativeButton(R.string.no, (dialog, i) -> {
-              })
-              .show();
-        } else {
-          downloadFile((Book) parent.getAdapter().getItem(position));
-        }
-      }
+      presenter.zimClick((Book) (parent.getAdapter().getItem(position)));
     }
   }
 
   @Override
-  public void downloadFile(Book book) {
-    downloadingBooks.add(book);
+  public void displayAlreadyDownloadedToast() {
+    Toast.makeText(super.getActivity(), getString(R.string.zim_already_downloading), Toast.LENGTH_LONG)
+        .show();
+  }
+
+  @Override
+  public void displayNoSpaceToast(long space) {
+    Toast.makeText(super.getActivity(), getString(R.string.download_no_space)
+        + "\n" + getString(R.string.space_available) + " "
+        + LibraryUtils.bytesToHuman(space), Toast.LENGTH_LONG).show();
+  }
+
+  @Override
+  public void displayStorageSelectSnackbar() {
+    Snackbar snackbar = Snackbar.make(libraryList,
+        getString(R.string.download_change_storage),
+        Snackbar.LENGTH_LONG)
+        .setAction(getString(R.string.open), v -> {
+          FragmentManager fm = getFragmentManager();
+          StorageSelectDialog dialogFragment = new StorageSelectDialog();
+          Bundle b = new Bundle();
+          b.putString(StorageSelectDialog.STORAGE_DIALOG_INTERNAL, getResources().getString(R.string.internal_storage));
+          b.putString(StorageSelectDialog.STORAGE_DIALOG_EXTERNAL, getResources().getString(R.string.external_storage));
+          b.putInt(StorageSelectDialog.STORAGE_DIALOG_THEME, StyleUtils.dialogStyle());
+          dialogFragment.setArguments(b);
+          dialogFragment.setOnSelectListener(this);
+          dialogFragment.show(fm, getResources().getString(R.string.pref_storage));
+        });
+    snackbar.setActionTextColor(Color.WHITE);
+    snackbar.show();
+  }
+
+  @Override
+  public void displayNetworkConfirmationDialog(BasicCallback callback) {
+    new AlertDialog.Builder(getContext())
+        .setTitle(R.string.wifi_only_title)
+        .setMessage(R.string.wifi_only_msg)
+        .setPositiveButton(R.string.yes, (dialog, i) -> {
+          sharedPreferenceUtil.putPrefWifiOnly(false);
+          KiwixMobileActivity.wifiOnly = false;
+          callback.apply();
+        })
+        .setNegativeButton(R.string.no, (dialog, i) -> {
+        })
+        .show();
+  }
+
+  @Override
+  public void displayDownloadStartedToast() {
+    Toast.makeText(super.getActivity(), getString(R.string.download_started_library), Toast.LENGTH_LONG)
+        .show();
+  }
+
+  @Override
+  public void refreshLibrary() {
     if (libraryAdapter != null && faActivity != null && faActivity.searchView != null) {
       libraryAdapter.getFilter().filter(faActivity.searchView.getQuery());
     }
-    Toast.makeText(super.getActivity(), getString(R.string.download_started_library), Toast.LENGTH_LONG)
-        .show();
-    Intent service = new Intent(super.getActivity(), DownloadService.class);
-    service.putExtra(DownloadIntent.DOWNLOAD_URL_PARAMETER, book.getUrl());
-    service.putExtra(DownloadIntent.DOWNLOAD_ZIM_TITLE, book.getTitle());
-    service.putExtra(EXTRA_BOOK, book);
-    super.getActivity().startService(service);
-    mConnection = new DownloadServiceConnection();
-    super.getActivity()
-        .bindService(service, mConnection.downloadServiceInterface, Context.BIND_AUTO_CREATE);
-    ZimManageActivity manage = (ZimManageActivity) super.getActivity();
-    manage.displayDownloadInterface();
-  }
-
-  public long getSpaceAvailable() {
-    return new File(sharedPreferenceUtil.getPrefStorage()).getFreeSpace();
   }
 
   @Override
@@ -348,29 +312,6 @@ public class LibraryFragment extends BaseFragment
       sharedPreferenceUtil.putPrefStorageTitle(getResources().getString(R.string.internal_storage));
     } else {
       sharedPreferenceUtil.putPrefStorageTitle(getResources().getString(R.string.external_storage));
-    }
-  }
-
-  public class DownloadServiceConnection {
-    public DownloadServiceInterface downloadServiceInterface;
-
-    public DownloadServiceConnection() {
-      downloadServiceInterface = new DownloadServiceInterface();
-    }
-
-    public class DownloadServiceInterface implements ServiceConnection {
-
-      @Override
-      public void onServiceConnected(ComponentName className, IBinder service) {
-        // We've bound to LocalService, cast the IBinder and get LocalService instance
-        DownloadService.LocalBinder binder = (DownloadService.LocalBinder) service;
-        mService = binder.getService();
-        mBound = true;
-      }
-
-      @Override
-      public void onServiceDisconnected(ComponentName arg0) {
-      }
     }
   }
 
@@ -389,7 +330,6 @@ public class LibraryFragment extends BaseFragment
         networkText.setVisibility(GONE);
         libraryList.setVisibility(View.VISIBLE);
       }
-
     }
   }
 }

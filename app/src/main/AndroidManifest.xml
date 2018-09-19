@@ -175,7 +175,7 @@
     </receiver>
 
 
-    <service android:name=".downloader.DownloadService" />
+    <service android:name=".downloader.KiwixDownloadService" />
 
     <activity
       android:name=".KiwixErrorActivity"

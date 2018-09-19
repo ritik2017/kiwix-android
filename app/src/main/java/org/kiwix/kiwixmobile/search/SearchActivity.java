@@ -91,7 +91,7 @@ public class SearchActivity extends BaseActivity
     setSupportActionBar(toolbar);
     getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_action_back);
     getSupportActionBar().setHomeButtonEnabled(true);
-    searchPresenter.attachView(this);
+    searchPresenter.attachView(this, this);
     listView = findViewById(R.id.search_list);
     defaultAdapter = getDefaultAdapter();
     searchPresenter.getRecentSearches();

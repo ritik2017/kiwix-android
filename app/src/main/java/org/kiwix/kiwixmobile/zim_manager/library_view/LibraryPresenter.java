@@ -17,17 +17,31 @@
  */
 package org.kiwix.kiwixmobile.zim_manager.library_view;
 
+import android.app.FragmentManager;
+import android.content.Context;
+import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.support.design.widget.Snackbar;
 import android.util.Log;
 
+import android.widget.Toast;
+import java.io.File;
+import org.kiwix.kiwixmobile.R;
+import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.base.BasePresenter;
 import org.kiwix.kiwixmobile.database.BookDao;
-import org.kiwix.kiwixmobile.downloader.DownloadFragment;
+import org.kiwix.kiwixmobile.downloader.KiwixDownloadService;
 import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
-import org.kiwix.kiwixmobile.network.KiwixService;
+import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.network.KiwixLibraryService;
 
 import javax.inject.Inject;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import org.kiwix.kiwixmobile.utils.NetworkUtils;
+import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
+import org.kiwix.kiwixmobile.utils.StorageUtils;
 
 /**
  * Created by EladKeyshawn on 06/04/2017.
@@ -36,18 +50,25 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 public class LibraryPresenter extends BasePresenter<LibraryViewCallback> {
 
   @Inject
-  KiwixService kiwixService;
+  KiwixLibraryService kiwixLibraryService;
 
   @Inject
   BookDao bookDao;
 
   @Inject
+  SharedPreferenceUtil sharedPreferences;
+
+  @Inject
+  ConnectivityManager connectivityManager;
+
+  @Inject
   public LibraryPresenter() {
+
   }
 
   void loadBooks() {
     getMvpView().displayScanningContent();
-    kiwixService.getLibrary()
+    kiwixLibraryService.getLibrary()
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(library -> getMvpView().showBooks(library.getBooks()), error -> {
           String msg = error.getLocalizedMessage();
@@ -56,18 +77,66 @@ public class LibraryPresenter extends BasePresenter<LibraryViewCallback> {
         });
   }
 
-  void loadRunningDownloadsFromDb() {
-    for (LibraryNetworkEntity.Book book : bookDao.getDownloadingBooks()) {
-      if (!DownloadFragment.mDownloads.containsValue(book)) {
-        book.url = book.remoteUrl;
-        getMvpView().downloadFile(book);
-      }
+//  void loadRunningDownloadsFromDb() {
+//    for (Zim : bookDao.getDownloadingBooks()) {
+//        // TODO: Fix this stuff
+//        book.url = book.remoteUrl;
+//        downloadFile(book);
+//    }
+//  }
+
+  public long getSpaceAvailable() {
+    return new File(sharedPreferences.getPrefStorage()).getFreeSpace();
+  }
+
+  public void zimClick(Book book) {
+    if (alreadyDownloaded(book)) {
+      getMvpView().displayAlreadyDownloadedToast();
+    } else if (!spaceToDownloadZim(book)) {
+      getMvpView().displayNoSpaceToast(getSpaceAvailable());
+      getMvpView().displayStorageSelectSnackbar();
+    } else if (!isConnectedToNetwork()) {
+      getMvpView().displayNoNetworkConnection();
+    } else if (!networkUsageAuthorised()) {
+      getMvpView().displayNetworkConfirmationDialog(() -> downloadFile(book));
+    } else {
+      downloadFile(book);
     }
   }
 
-  @Override
-  public void attachView(LibraryViewCallback view) {
-    super.attachView(view);
+  // TODO: Implement
+  private void downloadFile(Book book) {
+    Intent service = new Intent(getContext(), KiwixDownloadService.class);
+    service.putExtra(KiwixDownloadService.SELECTED_ZIM, new Zim(book, new File(sharedPreferences.getPrefStorage() + "/Kiwix/" + StorageUtils.getFileNameFromUrl(book.getUrl()))));
+    service.setAction(KiwixDownloadService.DOWNLOAD);
+    getContext().startService(service);
+
+    getMvpView().displayDownloadStartedToast();
+    getMvpView().refreshLibrary();
   }
 
+  private boolean networkUsageAuthorised() {
+    return !sharedPreferences.getPrefWifiOnly() || NetworkUtils.isWiFi(getContext());
+  }
+
+  private boolean isConnectedToNetwork() {
+    NetworkInfo network = connectivityManager.getActiveNetworkInfo();
+    return network != null && network.isConnected();
+  }
+
+  // TODO: Implement
+  private boolean alreadyDownloaded(Book book) {
+    return false;
+  }
+
+  private boolean spaceToDownloadZim(Book book) {
+    return getSpaceAvailable() >= Long.valueOf(book.getSize()) * 1024f;
+  }
+
+  public void refreshLibrary() {
+
+  }
+
+  public void loadRunningDownloadsFromDb() {
+  }
 }

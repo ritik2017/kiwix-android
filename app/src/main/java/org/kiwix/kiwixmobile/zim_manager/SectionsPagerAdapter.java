@@ -23,7 +23,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 
 import org.kiwix.kiwixmobile.R;
-import org.kiwix.kiwixmobile.downloader.DownloadFragment;
 import org.kiwix.kiwixmobile.zim_manager.fileselect_view.ZimFileSelectFragment;
 import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryFragment;
 
@@ -37,13 +36,9 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
     public LibraryFragment libraryFragment = new LibraryFragment();
 
-    private DownloadFragment downloadFragment = new DownloadFragment();
 
     private Context context;
 
-    public DownloadFragment getDownloadFragment() {
-        return downloadFragment;
-    }
 
     public SectionsPagerAdapter(Context context, FragmentManager fm) {
         super(fm);
@@ -58,8 +53,6 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter {
                 return zimFileSelectFragment;
             case 1:
                 return libraryFragment;
-            case 2:
-                return downloadFragment;
             default:
                 return null;
         }
@@ -67,7 +60,7 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter {
     @Override
     public int getCount() {
         // Show 3 total pages.
-        return 3;
+        return 2;
     }
 
     @Override
@@ -77,8 +70,6 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter {
                 return context.getResources().getString(R.string.local_zims);
             case 1:
                 return context.getResources().getString(R.string.remote_zims);
-            case 2:
-                return context.getResources().getString(R.string.zim_downloads);
         }
         return null;
     }

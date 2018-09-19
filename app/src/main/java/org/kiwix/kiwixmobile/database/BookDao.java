@@ -18,9 +18,13 @@
 package org.kiwix.kiwixmobile.database;
 
 
+import static org.kiwix.kiwixmobile.utils.files.FileUtils.hasParts;
+
 import com.yahoo.squidb.data.SquidCursor;
 import com.yahoo.squidb.sql.Query;
 
+import java.util.List;
+import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.database.entity.BookDatabaseEntity;
 import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
 import org.kiwix.kiwixmobile.utils.files.FileUtils;
@@ -29,8 +33,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 import javax.inject.Inject;
-
-import static org.kiwix.kiwixmobile.downloader.ChunkUtils.hasParts;
 
 /**
  * Dao class for books
@@ -72,7 +74,7 @@ public class BookDao {
     bookDatabaseEntity.setUrl(book.file.getPath());
     bookDatabaseEntity.setArticleCount(book.getArticleCount());
     bookDatabaseEntity.setMediaCount(book.getMediaCount());
-    bookDatabaseEntity.setSize(book.getSize());
+    bookDatabaseEntity.setSize(String.valueOf(book.getSize()));
     bookDatabaseEntity.setFavicon(book.getFavicon());
     bookDatabaseEntity.setName(book.getName());
     String filePath = book.file.getPath();
@@ -134,5 +136,13 @@ public class BookDao {
 
   public void deleteBook(String id) {
     mDb.deleteWhere(BookDatabaseEntity.class, BookDatabaseEntity.BOOK_ID.eq(id));
+  }
+
+  public List<Zim> getZims() {
+    List<Zim> zims = new ArrayList<>();
+    for (Book b : getBooks()) {
+      zims.add(new Zim(b, b.file));
+    }
+    return zims;
   }
 }

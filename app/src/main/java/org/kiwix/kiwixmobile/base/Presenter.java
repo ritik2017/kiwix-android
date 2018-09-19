@@ -17,12 +17,16 @@
  */
 package org.kiwix.kiwixmobile.base;
 
+import android.content.Context;
+
 /**
  * Created by EladKeyshawn on 05/04/2017.
  */
 public interface Presenter<V extends ViewCallback> {
 
-  void attachView(V mvpView);
+  void attachView(V mvpView, Context context);
 
   void detachView();
+
+  Context getContext();
 }

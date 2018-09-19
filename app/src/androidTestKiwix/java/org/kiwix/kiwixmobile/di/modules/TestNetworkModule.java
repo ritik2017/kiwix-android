@@ -22,7 +22,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
-import org.kiwix.kiwixmobile.network.KiwixService;
+import org.kiwix.kiwixmobile.network.KiwixLibraryService;
 import org.kiwix.kiwixmobile.utils.TestNetworkInterceptor;
 import org.mockito.Mockito;
 
@@ -35,6 +35,7 @@ import dagger.Provides;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockWebServer;
 
+import static org.kiwix.kiwixmobile.di.modules.NetworkModule.KIWIX_DOWNLOAD_URL;
 import static org.mockito.Mockito.doReturn;
 
 /**
@@ -50,9 +51,10 @@ public class TestNetworkModule {
   }
 
   @Provides @Singleton
-  KiwixService provideKiwixService(OkHttpClient okHttpClient, MockWebServer mockWebServer) {
-    return KiwixService.ServiceCreator.newHacklistService(okHttpClient, mockWebServer.url("/").toString());
+  KiwixLibraryService providesKiwixLibraryService(OkHttpClient okHttpClient) {
+    return KiwixLibraryService.ServiceCreator.newKiwixLibraryService(okHttpClient, KIWIX_DOWNLOAD_URL);
   }
+
 
   @Provides @Singleton
   MockWebServer provideMockWebServer() {

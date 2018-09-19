@@ -96,9 +96,9 @@ public class ZimManageActivity extends BaseActivity implements ZimManageViewCall
     setContentView(R.layout.zim_manager);
 
     setUpToolbar();
-    zimManagePresenter.attachView(this);
+    zimManagePresenter.attachView(this, this);
 
-    zimManagePresenter.showNoWifiWarning(this, getIntent().getAction());
+    //zimManagePresenter.showNoWifiWarning(this, getIntent().getAction());
 
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
@@ -107,7 +107,7 @@ public class ZimManageActivity extends BaseActivity implements ZimManageViewCall
     // Set up the ViewPager with the sections adapter.
     mViewPager = findViewById(R.id.container);
     mViewPager.setAdapter(mSectionsPagerAdapter);
-    mViewPager.setOffscreenPageLimit(2);
+    mViewPager.setOffscreenPageLimit(1);
 
     TabLayout tabLayout = findViewById(R.id.tabs);
     tabLayout.setupWithViewPager(mViewPager);
@@ -160,10 +160,6 @@ public class ZimManageActivity extends BaseActivity implements ZimManageViewCall
         searchItem.setVisible(true);
         languageItem.setVisible(true);
         break;
-      case 2:
-        searchItem.setVisible(false);
-        languageItem.setVisible(false);
-        break;
     }
   }
 
@@ -179,11 +175,6 @@ public class ZimManageActivity extends BaseActivity implements ZimManageViewCall
     toolbar.setNavigationOnClickListener(v -> onBackPressed());
   }
 
-
-  public void displayDownloadInterface() {
-    mSectionsPagerAdapter.notifyDataSetChanged();
-    mViewPager.setCurrentItem(2);
-  }
 
   @Override
   public void onBackPressed() {
@@ -234,7 +225,6 @@ public class ZimManageActivity extends BaseActivity implements ZimManageViewCall
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
-
     switch (item.getItemId()) {
       case R.id.select_language:
         if (mViewPager.getCurrentItem() == 1) {

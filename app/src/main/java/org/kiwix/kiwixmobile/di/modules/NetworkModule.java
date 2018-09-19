@@ -21,7 +21,7 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 
 import org.kiwix.kiwixmobile.BuildConfig;
-import org.kiwix.kiwixmobile.network.KiwixService;
+import org.kiwix.kiwixmobile.network.KiwixLibraryService;
 import org.kiwix.kiwixmobile.network.UserAgentInterceptor;
 
 import javax.inject.Singleton;
@@ -45,9 +45,11 @@ import okhttp3.logging.HttpLoggingInterceptor;
         .addNetworkInterceptor(new UserAgentInterceptor(useragent)).build();
   }
 
-  @Provides @Singleton KiwixService provideKiwixService(OkHttpClient okHttpClient) {
-    return KiwixService.ServiceCreator.newHacklistService(okHttpClient, KIWIX_DOWNLOAD_URL);
+  @Provides @Singleton
+  KiwixLibraryService providesKiwixLibraryService(OkHttpClient okHttpClient) {
+    return KiwixLibraryService.ServiceCreator.newKiwixLibraryService(okHttpClient, KIWIX_DOWNLOAD_URL);
   }
+
 
   @Provides @Singleton
   ConnectivityManager provideConnectivityManager(Context context) {

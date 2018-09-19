@@ -17,6 +17,7 @@
  */
 package org.kiwix.kiwixmobile.bookmarks_view;
 
+import android.content.Context;
 import org.kiwix.kiwixmobile.ZimContentProvider;
 import org.kiwix.kiwixmobile.base.BasePresenter;
 import org.kiwix.kiwixmobile.database.BookmarksDao;
@@ -49,8 +50,8 @@ public class BookmarksPresenter extends BasePresenter<BookmarksViewCallback> {
   }
 
   @Override
-  public void attachView(BookmarksViewCallback mvpView) {
-    super.attachView(mvpView);
+  public void attachView(BookmarksViewCallback mvpView, Context context) {
+    super.attachView(mvpView, getContext());
   }
 
 }

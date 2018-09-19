@@ -17,6 +17,9 @@
  */
 package org.kiwix.kiwixmobile.base;
 
+import android.content.Context;
+import org.kiwix.kiwixmobile.KiwixApplication;
+
 /**
  * Created by EladKeyshawn on 05/04/2017.
  */
@@ -24,15 +27,22 @@ package org.kiwix.kiwixmobile.base;
 public class BasePresenter<T extends ViewCallback> implements Presenter<T> {
 
   private T mMvpView;
+  private Context context;
 
   @Override
-  public void attachView(T mvpView) {
+  public void attachView(T mvpView, Context context) {
     this.mMvpView = mvpView;
+    this.context = context;
   }
 
   @Override
   public void detachView() {
     mMvpView = null;
+  }
+
+  @Override
+  public Context getContext() {
+    return context;
   }
 
   public boolean isViewAttached() {
@@ -42,7 +52,6 @@ public class BasePresenter<T extends ViewCallback> implements Presenter<T> {
   public T getMvpView() {
     return mMvpView;
   }
-
 
   public void checkViewAttached() {
     if (!isViewAttached()) throw new MvpViewNotAttachedException();

@@ -29,16 +29,16 @@ import retrofit2.converter.simplexml.SimpleXmlConverterFactory;
 import retrofit2.http.GET;
 import retrofit2.http.Url;
 
-public interface KiwixService {
+public interface KiwixLibraryService {
   @GET("/library/library_zim.xml") Observable<LibraryNetworkEntity> getLibrary();
 
   @GET Observable<MetaLinkNetworkEntity> getMetaLinks(@Url String url);
 
 
-  /******** Helper class that sets up new services *******/
+  // Helper class that sets up new services
   class ServiceCreator {
 
-    public static KiwixService newHacklistService(OkHttpClient okHttpClient, String baseUrl) {
+    public static KiwixLibraryService newKiwixLibraryService(OkHttpClient okHttpClient, String baseUrl) {
       Retrofit retrofit = new Retrofit.Builder()
           .baseUrl(baseUrl)
           .client(okHttpClient)
@@ -46,7 +46,7 @@ public interface KiwixService {
           .addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.io()))
           .build();
 
-      return retrofit.create(KiwixService.class);
+      return retrofit.create(KiwixLibraryService.class);
     }
   }
 }

@@ -40,6 +40,20 @@ public interface LibraryViewCallback extends ViewCallback {
   void displayScanningContent();
 
   void stopScanningContent();
+  
+  void displayAlreadyDownloadedToast();
 
-  void downloadFile(LibraryNetworkEntity.Book book);
+  void displayNoSpaceToast(long spaceAvailable);
+
+  void displayStorageSelectSnackbar();
+
+  void displayNetworkConfirmationDialog(BasicCallback basicCallback);
+
+  void displayDownloadStartedToast();
+
+  void refreshLibrary();
+
+  public interface BasicCallback {
+    void apply();
+  }
 }

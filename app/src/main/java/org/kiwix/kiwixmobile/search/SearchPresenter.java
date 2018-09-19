@@ -17,6 +17,7 @@
  */
 package org.kiwix.kiwixmobile.search;
 
+import android.content.Context;
 import org.kiwix.kiwixmobile.base.BasePresenter;
 import org.kiwix.kiwixmobile.database.RecentSearchDao;
 
@@ -35,8 +36,8 @@ public class SearchPresenter extends BasePresenter<SearchViewCallback> {
     public SearchPresenter() {}
 
     @Override
-    public void attachView(SearchViewCallback searchViewCallback) {
-        super.attachView(searchViewCallback);
+    public void attachView(SearchViewCallback searchViewCallback, Context context) {
+        super.attachView(searchViewCallback, getContext());
     }
 
     void getRecentSearches() {

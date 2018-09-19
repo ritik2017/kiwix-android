@@ -17,14 +17,29 @@
  */
 package org.kiwix.kiwixmobile.zim_manager.fileselect_view;
 
+import java.util.List;
+import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.base.ViewCallback;
 import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
 
 import java.util.ArrayList;
+import org.kiwix.kiwixmobile.zim_manager.ZimManageActivity;
 
 /**
  * Created by EladKeyshawn on 06/04/2017.
  */
 public interface ZimFileSelectViewCallback extends ViewCallback {
-  void showFiles(ArrayList<LibraryNetworkEntity.Book> books);
+  void setListViewAdapter(LocalZimAdapter localZimAdapter);
+
+  void showNoFilesMessage();
+
+  void hideNoFilesMessage();
+
+  void requestPermissions(String[] strings, int requestStoragePermission);
+
+  void setRefreshing(boolean b);
+
+  void finishActivity();
+
+  void runOnUiThread(Runnable runnable);
 }

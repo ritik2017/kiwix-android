@@ -27,7 +27,6 @@ import android.provider.DocumentsContract;
 import android.util.Log;
 
 import org.kiwix.kiwixmobile.BuildConfig;
-import org.kiwix.kiwixmobile.downloader.ChunkUtils;
 import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
 
 import java.io.File;
@@ -37,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.kiwix.kiwixmobile.downloader.ChunkUtils.deleteAllParts;
 import static org.kiwix.kiwixmobile.utils.Constants.TAG_KIWIX;
 
 public class FileUtils {
@@ -61,6 +59,45 @@ public class FileUtils {
       e.printStackTrace();
     }
   }
+
+  private static final String TPART = ".tpart";
+  private static final String CPART = ".cpart";
+
+
+
+  public static void deleteAllParts(File file) {
+    final String baseName = baseNameFromParts(file);
+    File directory = file.getParentFile();
+    File[] parts = directory.listFiles((file1, s) -> s.matches(baseName + ".*"));
+    for (File part : parts) {
+      part.delete();
+    }
+  }
+
+  public static String getFileName(String fileName) {
+    if (isPresent(fileName)) {
+      return fileName;
+    } else {
+      return fileName + "aa";
+    }
+  }
+
+  public static boolean isPresent(String name) {
+    return new File(name).exists() || new File(name + TPART).exists()
+        || new File(name + CPART + TPART).exists();
+  }
+
+  public static boolean hasParts(File file) {
+    File[] files = file.getParentFile().listFiles((file1, s) ->
+        s.startsWith(baseNameFromParts(file)) && s.endsWith(TPART));
+    return files != null && files.length > 0;
+  }
+  public static String baseNameFromParts(File file) {
+    return file.getName().replace(CPART, "").replace(TPART, "")
+        .replaceAll("\\.zim..", ".zim");
+  }
+
+
 
   public static synchronized void deleteZimFile(File file) {
     deleteAllParts(file);

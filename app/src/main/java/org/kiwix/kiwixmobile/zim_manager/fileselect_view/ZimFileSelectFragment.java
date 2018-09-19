@@ -42,6 +42,7 @@ import android.widget.Toast;
 
 import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.R;
+import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.ZimContentProvider;
 import org.kiwix.kiwixmobile.base.BaseFragment;
 import org.kiwix.kiwixmobile.database.BookDao;
@@ -74,11 +75,8 @@ public class ZimFileSelectFragment extends BaseFragment
   public SwipeRefreshLayout swipeRefreshLayout;
 
   private ZimManageActivity zimManageActivity;
-  private RescanDataAdapter mRescanAdapter;
-  private ArrayList<LibraryNetworkEntity.Book> mFiles;
-  private ListView mZimFileList;
-  private TextView mFileMessage;
-  private boolean mHasRefresh;
+  private ListView zimFileListView;
+  private TextView fileMessage;
 
   @Inject ZimFileSelectPresenter presenter;
   @Inject BookUtils bookUtils;
@@ -90,166 +88,63 @@ public class ZimFileSelectFragment extends BaseFragment
   public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     KiwixApplication.getApplicationComponent().inject(this);
     zimManageActivity = (ZimManageActivity) super.getActivity();
-    presenter.attachView(this);
+    presenter.attachView(this, getContext());
     // Replace LinearLayout by the type of the root element of the layout you're trying to load
     llLayout = (RelativeLayout) inflater.inflate(R.layout.zim_list, container, false);
     new LanguageUtils(super.getActivity()).changeFont(super.getActivity().getLayoutInflater(), sharedPreferenceUtil);
 
-    mFileMessage = llLayout.findViewById(R.id.file_management_no_files);
-    mZimFileList = llLayout.findViewById(R.id.zimfilelist);
-
-    mFiles = new ArrayList<>();
+    fileMessage = llLayout.findViewById(R.id.file_management_no_files);
+    zimFileListView = llLayout.findViewById(R.id.zimfilelist);
 
     // SwipeRefreshLayout for the list view
     swipeRefreshLayout = llLayout.findViewById(R.id.zim_swiperefresh);
     swipeRefreshLayout.setOnRefreshListener(this::refreshFragment);
 
-    // A boolean to distinguish between a user refresh and a normal loading
-    mHasRefresh = false;
-
-    mRescanAdapter = new RescanDataAdapter(zimManageActivity, 0, mFiles);
-
+    zimFileListView.setOnItemClickListener(this);
+    zimFileListView.setOnItemLongClickListener(this);
     // Allow temporary use of ZimContentProvider to query books
     ZimContentProvider.canIterate = true;
     return llLayout; // We must return the loaded Layout
   }
 
+  private void refreshFragment() {
+    presenter.loadLocalZimFiles();
+  }
+
   @Override
   public void onResume() {
-    presenter.loadLocalZimFileFromDb();
+    presenter.loadLocalZimFiles();
     super.onResume();
   }
 
-
-  // Show files from database
   @Override
-  public void showFiles(ArrayList<LibraryNetworkEntity.Book> books) {
-    if (mZimFileList == null)
-      return;
-
-    mZimFileList.setOnItemClickListener(this);
-    mZimFileList.setOnItemLongClickListener(this);
-    Collections.sort(books, new FileComparator());
-    mFiles.clear();
-    mFiles.addAll(books);
-    mZimFileList.setAdapter(mRescanAdapter);
-    mRescanAdapter.notifyDataSetChanged();
-    checkEmpty();
-    checkPermissions();
-  }
-
-  public void refreshFragment() {
-    if (mZimFileList == null) {
-      swipeRefreshLayout.setRefreshing(false);
-      return;
-    }
-
-    mHasRefresh = true;
-    presenter.loadLocalZimFileFromDb();
-  }
-
-  // Add book after download
-  public void addBook(String path) {
-    LibraryNetworkEntity.Book book = FileSearch.fileToBook(path);
-    if (book != null) {
-      mFiles.add(book);
-      mRescanAdapter.notifyDataSetChanged();
-      bookDao.saveBooks(mFiles);
-      checkEmpty();
-    }
-  }
-
-  private class FileComparator implements Comparator<LibraryNetworkEntity.Book> {
-    @Override
-    public int compare(LibraryNetworkEntity.Book b1, LibraryNetworkEntity.Book b2) {
-      return b1.getTitle().compareTo(b2.getTitle());
-    }
-  }
-
-  public void checkPermissions(){
-    if (ContextCompat.checkSelfPermission(super.getActivity(),
-        Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        != PackageManager.PERMISSION_GRANTED && Build.VERSION.SDK_INT > 18) {
-      Toast.makeText(super.getActivity(), getResources().getString(R.string.request_storage), Toast.LENGTH_LONG)
-          .show();
-        requestPermissions( new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-            REQUEST_STORAGE_PERMISSION);
-    } else {
-      getFiles();
-    }
-  }
-
-  public void getFiles() {
-    if (swipeRefreshLayout.isRefreshing() && !mHasRefresh)
-      return;
-
-    TestingUtils.bindResource(ZimFileSelectFragment.class);
-    swipeRefreshLayout.setRefreshing(true);
-    mZimFileList.setAdapter(mRescanAdapter);
-
-    // Set mHasRefresh to false to prevent loops
-    mHasRefresh = false;
-
-    checkEmpty();
-
-    new FileSearch(zimManageActivity, new FileSearch.ResultListener() {
-      @Override
-      public void onBookFound(LibraryNetworkEntity.Book book) {
-        if (!mFiles.contains(book)) {
-          zimManageActivity.runOnUiThread(() -> {
-            Log.i("Scanner", "File Search: Found Book " + book.title);
-            mFiles.add(book);
-            mRescanAdapter.notifyDataSetChanged();
-            checkEmpty();
-          });
-        }
-      }
-
-      @Override
-      public void onScanCompleted() {
-        // Remove non-existent books
-        ArrayList<LibraryNetworkEntity.Book> books = new ArrayList<>(mFiles);
-        for (LibraryNetworkEntity.Book book : books) {
-          if (book.file == null || !book.file.canRead()) {
-            mFiles.remove(book);
-          }
-        }
-
-        boolean cached = mFiles.containsAll(bookDao.getBooks()) && bookDao.getBooks().containsAll(mFiles);
-
-        // If content changed then update the list of downloadable books
-        if (!cached && zimManageActivity.mSectionsPagerAdapter.libraryFragment.libraryAdapter != null && zimManageActivity.searchView != null) {
-          zimManageActivity.mSectionsPagerAdapter.libraryFragment.libraryAdapter.getFilter().filter(zimManageActivity.searchView.getQuery());
-        }
-
-        // Save the current list of books
-        zimManageActivity.runOnUiThread(() -> {
-          mRescanAdapter.notifyDataSetChanged();
-          bookDao.saveBooks(mFiles);
-          checkEmpty();
-          TestingUtils.unbindResource(ZimFileSelectFragment.class);
-
-          // Stop swipe refresh animation
-          swipeRefreshLayout.setRefreshing(false);
-        });
-      }
-    }).scan(sharedPreferenceUtil.getPrefStorage());
+  public void setListViewAdapter(LocalZimAdapter localZimAdapter) {
+    zimFileListView.setAdapter(localZimAdapter);
   }
 
   @Override
-  public void onRequestPermissionsResult(int requestCode,
-                                         String permissions[], int[] grantResults) {
-    switch (requestCode) {
-      case REQUEST_STORAGE_PERMISSION: {
-        if (grantResults.length > 0
-            && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            getFiles();
-        } else if (grantResults.length != 0) {
-          zimManageActivity.finish();
-        }
-      }
+  public void showNoFilesMessage() {
+    fileMessage.setVisibility(View.VISIBLE);
+  }
 
-    }
+  @Override
+  public void hideNoFilesMessage() {
+    fileMessage.setVisibility(View.GONE);
+  }
+
+  @Override
+  public void setRefreshing(boolean b) {
+    swipeRefreshLayout.setRefreshing(b);
+  }
+
+  @Override
+  public void finishActivity() {
+    zimManageActivity.finish();
+  }
+
+  @Override
+  public void runOnUiThread(Runnable runnable) {
+    zimManageActivity.runOnUiThread(runnable);
   }
 
   @Override
@@ -259,10 +154,10 @@ public class ZimFileSelectFragment extends BaseFragment
     ZimContentProvider.canIterate = false;
 
     String file;
-    LibraryNetworkEntity.Book data = (LibraryNetworkEntity.Book) mZimFileList.getItemAtPosition(position);
-    file = data.file.getPath();
+    Zim zim = (Zim) zimFileListView.getItemAtPosition(position);
+    file = zim.getFilePath();
 
-    if (!data.file.canRead()) {
+    if (!new File(file).canRead()) {
       Toast.makeText(zimManageActivity, getString(R.string.error_filenotfound), Toast.LENGTH_LONG).show();
       return;
     }
@@ -280,7 +175,7 @@ public class ZimFileSelectFragment extends BaseFragment
     new AlertDialog.Builder(zimManageActivity, dialogStyle())
         .setMessage(getString(R.string.delete_specific_zim))
         .setPositiveButton(getResources().getString(R.string.delete), (dialog, which) -> {
-          if (deleteSpecificZimFile(position)) {
+          if (presenter.deleteSpecificZimFile(position)) {
             Toast.makeText(zimManageActivity, getResources().getString(R.string.delete_specific_zim_toast), Toast.LENGTH_SHORT).show();
           } else {
             Toast.makeText(zimManageActivity, getResources().getString(R.string.delete_zim_failed), Toast.LENGTH_SHORT).show();
@@ -292,132 +187,9 @@ public class ZimFileSelectFragment extends BaseFragment
         .show();
   }
 
-  public boolean deleteSpecificZimFile(int position) {
-    File file = mFiles.get(position).file;
-    FileUtils.deleteZimFile(file);
-    if (file.exists()) {
-      return false;
-    }
-    bookDao.deleteBook(mFiles.get(position).getId());
-    mFiles.remove(position);
-    mRescanAdapter.notifyDataSetChanged();
-    checkEmpty();
-    if (zimManageActivity.mSectionsPagerAdapter.libraryFragment.libraryAdapter != null) {
-      zimManageActivity.mSectionsPagerAdapter.libraryFragment.libraryAdapter.getFilter().filter(zimManageActivity.searchView.getQuery());
-    }
-    return true;
-  }
-
-  public void checkEmpty(){
-    if (mZimFileList.getCount() == 0){
-      mFileMessage.setVisibility(View.VISIBLE);
-    } else
-      mFileMessage.setVisibility(View.GONE);
-  }
-
-  // The Adapter for the ListView for when the ListView is populated with the rescanned files
-  private class RescanDataAdapter extends ArrayAdapter<LibraryNetworkEntity.Book> {
-
-    public RescanDataAdapter(Context context, int textViewResourceId, List<LibraryNetworkEntity.Book> objects) {
-      super(context, textViewResourceId, objects);
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-
-      ViewHolder holder;
-      LibraryNetworkEntity.Book book = getItem(position);
-        if (convertView == null) {
-          convertView = View.inflate(zimManageActivity, R.layout.library_item, null);
-          holder = new ViewHolder();
-          holder.title = convertView.findViewById(R.id.title);
-          holder.description = convertView.findViewById(R.id.description);
-          holder.language = convertView.findViewById(R.id.language);
-          holder.creator = convertView.findViewById(R.id.creator);
-          holder.publisher = convertView.findViewById(R.id.publisher);
-          holder.date = convertView.findViewById(R.id.date);
-          holder.size = convertView.findViewById(R.id.size);
-          holder.fileName = convertView.findViewById(R.id.fileName);
-          holder.favicon = convertView.findViewById(R.id.favicon);
-          convertView.setTag(holder);
-        } else {
-          holder = (ViewHolder) convertView.getTag();
-        }
-
-        if (book == null) {
-          return convertView;
-        }
-
-        holder.title.setText(book.getTitle());
-        holder.description.setText(book.getDescription());
-        holder.language.setText(bookUtils.getLanguage(book.getLanguage()));
-        holder.creator.setText(book.getCreator());
-        holder.publisher.setText(book.getPublisher());
-        holder.date.setText(book.getDate());
-        holder.size.setText(LibraryAdapter.createGbString(book.getSize()));
-        holder.fileName.setText(parseURL(getActivity(), book.file.getPath()));
-        holder.favicon.setImageBitmap(LibraryAdapter.createBitmapFromEncodedString(book.getFavicon(), zimManageActivity));
-
-
-        //// Check if no value is empty. Set the view to View.GONE, if it is. To View.VISIBLE, if not.
-        if (book.getTitle() == null || book.getTitle().isEmpty()) {
-          holder.title.setVisibility(View.GONE);
-        } else {
-          holder.title.setVisibility(View.VISIBLE);
-        }
-
-        if (book.getDescription() == null || book.getDescription().isEmpty()) {
-          holder.description.setVisibility(View.GONE);
-        } else {
-          holder.description.setVisibility(View.VISIBLE);
-        }
-
-        if (book.getCreator() == null || book.getCreator().isEmpty()) {
-          holder.creator.setVisibility(View.GONE);
-        } else {
-          holder.creator.setVisibility(View.VISIBLE);
-        }
-
-        if (book.getPublisher() == null || book.getPublisher().isEmpty()) {
-          holder.publisher.setVisibility(View.GONE);
-        } else {
-          holder.publisher.setVisibility(View.VISIBLE);
-        }
-
-        if (book.getDate() == null || book.getDate().isEmpty()) {
-          holder.date.setVisibility(View.GONE);
-        } else {
-          holder.date.setVisibility(View.VISIBLE);
-        }
-
-        if (book.getSize() == null || book.getSize().isEmpty()) {
-          holder.size.setVisibility(View.GONE);
-        } else {
-          holder.size.setVisibility(View.VISIBLE);
-        }
-
-      return convertView;
-
-    }
-
-    private class ViewHolder {
-      TextView title;
-
-      TextView description;
-
-      TextView language;
-
-      TextView creator;
-
-      TextView publisher;
-
-      TextView date;
-
-      TextView size;
-
-      TextView fileName;
-
-      ImageView favicon;
-    }
+  @Override
+  public void onRequestPermissionsResult(int requestCode,
+      String permissions[], int[] grantResults) {
+      presenter.onRequestPermissionsResult(requestCode, permissions, grantResults);
   }
 }

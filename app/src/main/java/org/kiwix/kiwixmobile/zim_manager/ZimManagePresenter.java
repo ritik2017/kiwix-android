@@ -24,7 +24,6 @@ import android.util.Log;
 import org.kiwix.kiwixmobile.KiwixMobileActivity;
 import org.kiwix.kiwixmobile.R;
 import org.kiwix.kiwixmobile.base.BasePresenter;
-import org.kiwix.kiwixmobile.downloader.DownloadService;
 import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
 
 import javax.inject.Inject;
@@ -35,7 +34,7 @@ import static org.kiwix.kiwixmobile.zim_manager.ZimManageActivity.KIWIX_TAG;
  * Presenter for {@link ZimManageActivity}
  */
 
-class ZimManagePresenter extends BasePresenter<ZimManageViewCallback> {
+public class ZimManagePresenter extends BasePresenter<ZimManageViewCallback> {
 
   @Inject
   SharedPreferenceUtil mSharedPreferenceUtil;
@@ -44,19 +43,20 @@ class ZimManagePresenter extends BasePresenter<ZimManageViewCallback> {
   ZimManagePresenter() {
   }
 
-  void showNoWifiWarning(Context context, String action) {
-    if (DownloadService.ACTION_NO_WIFI.equals(action)) {
-      new AlertDialog.Builder(context)
-          .setTitle(R.string.wifi_only_title)
-          .setMessage(R.string.wifi_only_msg)
-          .setPositiveButton(R.string.yes, (dialog, i) -> {
-            mSharedPreferenceUtil.putPrefWifiOnly(false);
-            KiwixMobileActivity.wifiOnly = false;
-          })
-          .setNegativeButton(R.string.no, (dialog, i) -> {
-          })
-          .show();
-      Log.i(KIWIX_TAG, "No WiFi, showing warning");
-    }
-  }
+  // TODO: Fix this
+//  void showNoWifiWarning(Context context, String action) {
+//    if (DownloadService.ACTION_NO_WIFI.equals(action)) {
+//      new AlertDialog.Builder(context)
+//          .setTitle(R.string.wifi_only_title)
+//          .setMessage(R.string.wifi_only_msg)
+//          .setPositiveButton(R.string.yes, (dialog, i) -> {
+//            mSharedPreferenceUtil.putPrefWifiOnly(false);
+//            KiwixMobileActivity.wifiOnly = false;
+//          })
+//          .setNegativeButton(R.string.no, (dialog, i) -> {
+//          })
+//          .show();
+//      Log.i(KIWIX_TAG, "No WiFi, showing warning");
+//    }
+//  }
 }
