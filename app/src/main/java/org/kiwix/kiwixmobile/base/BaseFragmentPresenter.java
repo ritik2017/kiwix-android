@@ -15,28 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.kiwix.kiwixmobile.zim_manager.fileselect_view;
+package org.kiwix.kiwixmobile.base;
 
-import org.kiwix.kiwixmobile.Zim;
-import org.kiwix.kiwixmobile.base.ViewCallback;
+import android.content.Context;
 
-/**
- * Created by EladKeyshawn on 06/04/2017.
- */
-public interface ZimFileSelectViewCallback extends ViewCallback {
-  void setListViewAdapter(LocalZimAdapter localZimAdapter);
+public abstract class BaseFragmentPresenter <T extends ViewCallback> extends BasePresenter<T> {
 
-  void showNoFilesMessage();
+  @Override
+  public void attachView(T mvpView, Context context) {
+    super.attachView(mvpView, context);
+    getBaseFragmentActivity().attachPresenter(this);
+  }
 
-  void hideNoFilesMessage();
-
-  void requestPermissions(String[] strings, int requestStoragePermission);
-
-  void setRefreshing(boolean b);
-
-  void finishActivity();
-
-  void runOnUiThread(Runnable runnable);
-
-  void updateProgressBar(Zim zim, int progress);
+  public abstract BaseFragmentActivityPresenter getBaseFragmentActivity();
 }

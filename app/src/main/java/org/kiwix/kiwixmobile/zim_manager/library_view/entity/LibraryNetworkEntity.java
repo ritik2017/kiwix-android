@@ -16,8 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-package org.kiwix.kiwixmobile.library.entity;
+package org.kiwix.kiwixmobile.zim_manager.library_view.entity;
 
+import org.kiwix.kiwixmobile.Zim;
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.ElementList;
 import org.simpleframework.xml.Root;
@@ -164,6 +165,11 @@ public class LibraryNetworkEntity {
     public boolean equals (Object obj) {
       if (obj instanceof Book) {
         if (((Book) obj).getId() != null && ((Book) obj).getId().equals(getId())) {
+          return true;
+        }
+      }
+      if (obj instanceof Zim) {
+        if (((Zim) obj).getId() != null && ((Zim) obj).getId().equals(getId())) {
           return true;
         }
       }

@@ -5,7 +5,6 @@ import static org.kiwix.kiwixmobile.downloader.KiwixDownloadService.STOP;
 import static org.kiwix.kiwixmobile.utils.Constants.EXTRA_LIBRARY;
 import static org.kiwix.kiwixmobile.utils.Constants.ONGOING_DOWNLOAD_CHANNEL_ID;
 
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -13,28 +12,27 @@ import android.graphics.Color;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import com.yahoo.squidb.data.SquidCursor;
+import com.yahoo.squidb.data.TableModel;
 import io.reactivex.Observable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.SequenceInputStream;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javax.inject.Inject;
-import javax.inject.Singleton;
-import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okio.Buffer;
 import okio.BufferedSource;
+import org.kiwix.kiwixmobile.database.LocalZimDao;
+import org.kiwix.kiwixmobile.database.entity.LocalZimDatabaseEntity;
 import org.kiwix.kiwixmobile.downloader.KiwixDownloadService;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.zim_manager.library_view.entity.LibraryNetworkEntity.Book;
 import org.kiwix.kiwixmobile.network.KiwixLibraryService;
 import org.kiwix.kiwixmobile.utils.files.FileUtils;
 
@@ -61,18 +59,26 @@ public class Zim implements Serializable {
   private final long mediaCount;
   private final String name;
   private final String tags;
-  private final long size;
+  private long size;
 
   private final File localFile;
   private final List<Chunk> componentFiles = new ArrayList<>();
 
-  private long trueSize = -1;
   private String downloadUrl;
   private int downloadId = DOWNLOAD_ID++;
+  private boolean isDownloaded;
 
-  public Zim(Book book, File localFile) {
+  @Inject
+  transient LocalZimDao localZimDao;
+
+  private void readObject(java.io.ObjectInputStream in)
+      throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
     KiwixApplication.getApplicationComponent().inject(this);
+  }
 
+  public Zim(Book book, File localFile, boolean isDownloaded) {
+    KiwixApplication.getApplicationComponent().inject(this);
     this.id = book.getId();
     this.title = book.getTitle();
     this.description = book.getDescription();
@@ -88,8 +94,52 @@ public class Zim implements Serializable {
     this.tags = book.getTags();
     this.name = book.getName();
     this.size = tryParseLong(book.getSize());
-
     this.localFile = localFile;
+    this.isDownloaded = isDownloaded;
+  }
+
+  public Zim(SquidCursor<LocalZimDatabaseEntity> localZimDatabaseEntity) {
+    KiwixApplication.getApplicationComponent().inject(this);
+    this.id = localZimDatabaseEntity.get(LocalZimDatabaseEntity.ZIM_ID);
+    this.title = localZimDatabaseEntity.get(LocalZimDatabaseEntity.TITLE);
+    this.description = localZimDatabaseEntity.get(LocalZimDatabaseEntity.DESCRIPTION);
+    this.language = localZimDatabaseEntity.get(LocalZimDatabaseEntity.LANGUAGE);
+    this.creator = localZimDatabaseEntity.get(LocalZimDatabaseEntity.ZIM_CREATOR);
+    this.publisher = localZimDatabaseEntity.get(LocalZimDatabaseEntity.PUBLISHER);
+    this.favicon = localZimDatabaseEntity.get(LocalZimDatabaseEntity.FAVICON);
+    this.faviconMimeType = localZimDatabaseEntity.get(LocalZimDatabaseEntity.FAVICON_MIME_TYPE);
+    this.date = localZimDatabaseEntity.get(LocalZimDatabaseEntity.DATE);
+    this.url = localZimDatabaseEntity.get(LocalZimDatabaseEntity.URL);
+    this.articleCount = localZimDatabaseEntity.get(LocalZimDatabaseEntity.ARTICLE_COUNT);
+    this.mediaCount = localZimDatabaseEntity.get(LocalZimDatabaseEntity.MEDIA_COUNT);
+    this.tags = localZimDatabaseEntity.get(LocalZimDatabaseEntity.TAGS);
+    this.name = localZimDatabaseEntity.get(LocalZimDatabaseEntity.NAME);
+    this.size = localZimDatabaseEntity.get(LocalZimDatabaseEntity.SIZE);
+    this.localFile = new File(localZimDatabaseEntity.get(LocalZimDatabaseEntity.LOCAL_PATH));
+    this.isDownloaded = localZimDatabaseEntity.get(LocalZimDatabaseEntity.DOWNLOADED);
+    updateDownloadedStatus();
+  }
+
+  public TableModel getDatabaseEntry() {
+    LocalZimDatabaseEntity localZimDatabaseEntity = new LocalZimDatabaseEntity();
+    localZimDatabaseEntity.setZimId(getId());
+    localZimDatabaseEntity.setTitle(getTitle());
+    localZimDatabaseEntity.setDescription(getDescription());
+    localZimDatabaseEntity.setLanguage(getLanguage());
+    localZimDatabaseEntity.setZimCreator(getCreator());
+    localZimDatabaseEntity.setPublisher(getPublisher());
+    localZimDatabaseEntity.setFavicon(getFavicon());
+    localZimDatabaseEntity.setFaviconMimeType(getFaviconMimeType());
+    localZimDatabaseEntity.setDate(getDate());
+    localZimDatabaseEntity.setUrl(getUrl());
+    localZimDatabaseEntity.setArticleCount(getArticleCount());
+    localZimDatabaseEntity.setMediaCount(getMediaCount());
+    localZimDatabaseEntity.setTags(getTags());
+    localZimDatabaseEntity.setName(getName());
+    localZimDatabaseEntity.setSize(getSize());
+    localZimDatabaseEntity.setLocalPath(getFilePath());
+    localZimDatabaseEntity.setIsDownloaded(isDownloaded);
+    return localZimDatabaseEntity;
   }
 
   public String getId() {
@@ -156,20 +206,16 @@ public class Zim implements Serializable {
     return localFile.getPath();
   }
 
+  public String getTags() {
+    return tags;
+  }
+
   public long tryParseLong(String string) {
     try {
       return Long.parseLong(string);
     } catch (NumberFormatException e) {
-      return 0;
+      return -1;
     }
-  }
-
-
-  private long getTrueSizeCache() {
-    if (trueSize == -1) {
-      throw new NullPointerException();
-    }
-    return trueSize;
   }
 
   private String getDownloadUrlCache() {
@@ -179,17 +225,17 @@ public class Zim implements Serializable {
     return downloadUrl;
   }
 
-  public Observable<Long> getTrueSize(OkHttpClient okHttpClient) {
-    return Observable.create(subscriber -> {
-      if (trueSize == -1) {
-        Request request = new Request.Builder().url(downloadUrl).head().build();
-        Response response = okHttpClient.newCall(request).execute();
-        String LengthHeader = response.headers().get("Content-Length");
-        trueSize = LengthHeader == null ? 0 : Long.parseLong(LengthHeader);
-      }
-      subscriber.onNext(trueSize);
-      subscriber.onComplete();
-    });
+  public Observable<Long> calculateSize(OkHttpClient okHttpClient) {
+    return Observable.create(
+        subscriber -> {
+          Request request = new Request.Builder().url(downloadUrl).head().build();
+          Response response = okHttpClient.newCall(request).execute();
+          String LengthHeader = response.headers().get("Content-Length");
+          size = LengthHeader == null ? 0 : Long.parseLong(LengthHeader);
+          localZimDao.saveZims(Collections.singletonList(this));
+          subscriber.onNext(size);
+          subscriber.onComplete();
+        });
   }
 
   public Observable<String> getDownloadUrl(KiwixLibraryService kiwixLibraryService) {
@@ -236,6 +282,16 @@ public class Zim implements Serializable {
     return componentFiles;
   }
 
+  public void updateDownloadedStatus() {
+    for (Chunk chunk : getChunks()) {
+      if (!chunk.isDownloaded()) {
+        isDownloaded = false;
+        return;
+      }
+    }
+    isDownloaded = true;
+  }
+
   public NotificationCompat.Builder getNotification(Context context) {
     final Intent target = new Intent(context, KiwixMobileActivity.class);
     target.putExtra(EXTRA_LIBRARY, true);
@@ -264,6 +320,10 @@ public class Zim implements Serializable {
         .setOngoing(true);
   }
 
+  public boolean isDownloaded() {
+    return isDownloaded;
+  }
+
   public class Chunk {
 
     private final long startByte;
@@ -271,24 +331,33 @@ public class Zim implements Serializable {
     private final int index;
     private final File chunkFile;
     private final long chunkSize;
+    private boolean isDownloaded;
 
     public Chunk() {
-      startByte = 0;
-      endByte = getTrueSizeCache();
-      index = 0;
       chunkFile = localFile;
+      isDownloaded = Zim.this.isDownloaded || FileUtils.doesFileExist(chunkFile.getPath(), getSize(), false);
+      startByte = 0;
+      endByte = getSize();
+      index = 0;
       chunkSize = endByte - startByte;
     }
 
     public Chunk(int index) {
       this.index = index;
       this.startByte = index * CHUNK_SIZE;
-      this.endByte = Math.min(startByte + CHUNK_SIZE, getTrueSizeCache());
+      this.endByte = Math.min(startByte + CHUNK_SIZE, getSize());
       this.chunkSize = endByte - startByte;
       this.chunkFile = new File(localFile.getPath() + ALPHABET[index % 26] + ALPHABET[index / 26]);
+      isDownloaded = FileUtils.doesFileExist(chunkFile.getPath(), chunkSize, false);
     }
 
     public Observable<Integer> download(OkHttpClient okHttpClient) throws IOException {
+      if (isDownloaded) {
+        return Observable.create(subscriber -> {
+          subscriber.onNext(100);
+          subscriber.onComplete();
+        });
+      }
       if (!chunkFile.exists()) {
         chunkFile.createNewFile();
       }
@@ -354,8 +423,13 @@ public class Zim implements Serializable {
             }
           }
         }
+        isDownloaded = true;
         subscriber.onComplete();
       });
+    }
+
+    public boolean isDownloaded() {
+      return isDownloaded;
     }
   }
 
@@ -364,6 +438,11 @@ public class Zim implements Serializable {
   public boolean equals (Object obj) {
     if (obj instanceof Zim) {
       if (((Zim) obj).getId() != null && ((Zim) obj).getId().equals(getId())) {
+        return true;
+      }
+    }
+    if (obj instanceof Book) {
+      if (((Book) obj).getId() != null && ((Book) obj).getId().equals(getId())) {
         return true;
       }
     }

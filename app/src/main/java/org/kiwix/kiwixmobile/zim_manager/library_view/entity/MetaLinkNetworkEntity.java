@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.kiwix.kiwixmobile.library.entity;
+package org.kiwix.kiwixmobile.zim_manager.library_view.entity;
 
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Element;

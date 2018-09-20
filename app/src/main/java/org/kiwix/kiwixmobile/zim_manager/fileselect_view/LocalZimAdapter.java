@@ -13,9 +13,7 @@ import javax.inject.Inject;
 import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.R;
 import org.kiwix.kiwixmobile.Zim;
-import org.kiwix.kiwixmobile.library.LibraryAdapter;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryAdapter;
 import org.kiwix.kiwixmobile.utils.BookUtils;
 
 public class LocalZimAdapter extends ArrayAdapter<Zim> {
@@ -56,6 +54,7 @@ public class LocalZimAdapter extends ArrayAdapter<Zim> {
       return convertView;
     }
 
+    holder.id = zim.getId();
     holder.title.setText(zim.getTitle());
     holder.description.setText(zim.getDescription());
     holder.language.setText(bookUtils.getLanguage(zim.getLanguage()));
@@ -104,11 +103,39 @@ public class LocalZimAdapter extends ArrayAdapter<Zim> {
       holder.size.setVisibility(View.VISIBLE);
     }
 
+    if (!zim.isDownloaded()) {
+      holder.description.setText("Downloading");
+      convertView.findViewById(R.id.downloadProgress).setVisibility(View.VISIBLE);
+      convertView.findViewById(R.id.pause).setVisibility(View.VISIBLE);
+      convertView.findViewById(R.id.stop).setVisibility(View.VISIBLE);
+    } else {
+      convertView.findViewById(R.id.downloadProgress).setVisibility(View.GONE);
+      convertView.findViewById(R.id.pause).setVisibility(View.GONE);
+      convertView.findViewById(R.id.stop).setVisibility(View.GONE);
+    }
+
     return convertView;
 
   }
 
-  private class ViewHolder {
+  public static class ViewHolder {
+
+    public ViewHolder() {
+
+    }
+
+    public ViewHolder(String id) {
+      this.id = id;
+    }
+
+    public String id;
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof ViewHolder && ((ViewHolder) obj).id != null) {
+        return ((ViewHolder) obj).id.equals(id);
+      }
+      return false;
+    }
 
     TextView title;
 

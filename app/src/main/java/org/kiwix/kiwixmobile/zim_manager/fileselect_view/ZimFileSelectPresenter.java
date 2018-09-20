@@ -25,42 +25,36 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 import java.io.File;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.R;
 import org.kiwix.kiwixmobile.Zim;
-import org.kiwix.kiwixmobile.base.BasePresenter;
-import org.kiwix.kiwixmobile.database.BookDao;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
+import org.kiwix.kiwixmobile.base.BaseFragmentActivityPresenter;
+import org.kiwix.kiwixmobile.base.BaseFragmentPresenter;
+import org.kiwix.kiwixmobile.database.LocalZimDao;
 
 import java.util.ArrayList;
 
 import javax.inject.Inject;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
 import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
 import org.kiwix.kiwixmobile.utils.TestingUtils;
 import org.kiwix.kiwixmobile.utils.files.FileSearch;
 import org.kiwix.kiwixmobile.utils.files.FileSearch.ResultListener;
-import org.kiwix.kiwixmobile.utils.files.FileUtils;
-import org.kiwix.kiwixmobile.zim_manager.ZimManageActivity;
 import org.kiwix.kiwixmobile.zim_manager.ZimManagePresenter;
-import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryPresenter;
 
 /**
  * Created by EladKeyshawn on 06/04/2017.
  */
-public class ZimFileSelectPresenter extends BasePresenter<ZimFileSelectViewCallback> {
+public class ZimFileSelectPresenter extends BaseFragmentPresenter<ZimFileSelectViewCallback> {
 
   @Inject
-  BookDao bookDao;
+  LocalZimDao bookDao;
 
   @Inject
-  LibraryPresenter libraryPresenter;
+  ZimManagePresenter zimManagePresenter;
 
   @Inject
   SharedPreferenceUtil sharedPreferenceUtil;
@@ -79,11 +73,14 @@ public class ZimFileSelectPresenter extends BasePresenter<ZimFileSelectViewCallb
     localZimAdapter = new LocalZimAdapter(context, 0, localZims);
   }
 
-  public void loadLocalZimFiles() {
-    showZims(bookDao.getZims());
+  @Override
+  public BaseFragmentActivityPresenter getBaseFragmentActivity() {
+    return zimManagePresenter;
   }
 
-  public void showZims(List<Zim> newZims) {
+
+  public void showZims() {
+    List<Zim> newZims = bookDao.getZims();
     Collections.sort(newZims, new ZimComparator());
     localZims.clear();
     localZims.addAll(newZims);
@@ -96,11 +93,11 @@ public class ZimFileSelectPresenter extends BasePresenter<ZimFileSelectViewCallb
   public boolean deleteSpecificZimFile(int position) {
     Zim zim = localZims.get(position);
     zim.delete();
-    bookDao.deleteBook(zim.getId());
+    bookDao.deleteZim(zim.getId());
     localZims.remove(position);
     localZimAdapter.notifyDataSetChanged();
     checkEmpty();
-    libraryPresenter.refreshLibrary();
+    zimManagePresenter.refreshRemoteLibrary();
     return true;
   }
 
@@ -112,13 +109,10 @@ public class ZimFileSelectPresenter extends BasePresenter<ZimFileSelectViewCallb
     }
   }
 
-  // Add book after download
-  public void addZim(String path) {
-    Zim zim = FileSearch.fileToZim(path);
+  public void addZim(Zim zim) {
     if (zim != null) {
       localZims.add(zim);
       localZimAdapter.notifyDataSetChanged();
-      //bookDao.saveZims(localZims);
       checkEmpty();
     }
   }
@@ -162,20 +156,18 @@ public class ZimFileSelectPresenter extends BasePresenter<ZimFileSelectViewCallb
         // Remove non-existent books
         ArrayList<Zim> zims = new ArrayList<>(localZims);
         for (Zim zim : zims) {
-          if (!new File(zim.getFilePath()).exists() || !new File(zim.getFilePath()).canRead()) {
+          if ((!new File(zim.getFilePath()).exists() || !new File(zim.getFilePath()).canRead()) && !zim.isDownloaded()) {
             localZims.remove(zim);
           }
         }
 
-        boolean cached = localZims.containsAll(bookDao.getZims()) && bookDao.getZims().containsAll(localZims);
-
         // If content changed then update the list of downloadable books
-        libraryPresenter.refreshLibrary();
+        zimManagePresenter.refreshRemoteLibrary();
 
         // Save the current list of books
         getMvpView().runOnUiThread(() -> {
           localZimAdapter.notifyDataSetChanged();
-          //bookDao.saveBooks(mFiles);
+          bookDao.saveZims(zims);
           checkEmpty();
           TestingUtils.unbindResource(ZimFileSelectFragment.class);
 
@@ -199,6 +191,14 @@ public class ZimFileSelectPresenter extends BasePresenter<ZimFileSelectViewCallb
       }
 
     }
+  }
+
+  public void setProgress(Zim zim, Integer progress) {
+    getMvpView().updateProgressBar(zim, progress);
+  }
+
+  public void completeDownload(Zim zim) {
+    getMvpView().runOnUiThread(() -> localZimAdapter.notifyDataSetChanged());
   }
 
   private class ZimComparator implements Comparator<Zim> {

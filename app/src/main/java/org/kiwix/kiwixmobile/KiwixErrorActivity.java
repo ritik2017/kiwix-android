@@ -10,13 +10,12 @@ import android.support.v4.content.FileProvider;
 import android.widget.Button;
 import android.widget.CheckBox;
 
+import java.util.List;
 import org.kiwix.kiwixmobile.base.BaseActivity;
-import org.kiwix.kiwixmobile.database.BookDao;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
+import org.kiwix.kiwixmobile.database.LocalZimDao;
 import org.kiwix.kiwixmobile.utils.SplashActivity;
 
 import java.io.File;
-import java.util.ArrayList;
 
 import javax.inject.Inject;
 
@@ -28,7 +27,7 @@ import static org.kiwix.kiwixmobile.utils.LanguageUtils.getCurrentLocale;
 public class KiwixErrorActivity extends BaseActivity {
 
   @Inject
-  BookDao bookDao;
+  LocalZimDao bookDao;
 
   @BindView(R.id.reportButton)
   Button reportButton;
@@ -89,13 +88,13 @@ public class KiwixErrorActivity extends BaseActivity {
       }
 
       if(allowZimsCheckbox.isChecked()) {
-        ArrayList<LibraryNetworkEntity.Book> books = bookDao.getBooks();
+        List<Zim> zims = bookDao.getZims();
 
         StringBuilder sb = new StringBuilder();
-        for(LibraryNetworkEntity.Book book: books) {
-          String bookString = book.getTitle() +
-              ":\nArticles: ["+ book.getArticleCount() +
-              "]\nCreator: [" + book.getCreator() +
+        for(Zim zim : zims) {
+          String bookString = zim.getTitle() +
+              ":\nArticles: ["+ zim.getArticleCount() +
+              "]\nCreator: [" + zim.getCreator() +
               "]\n";
 
           sb.append(bookString);

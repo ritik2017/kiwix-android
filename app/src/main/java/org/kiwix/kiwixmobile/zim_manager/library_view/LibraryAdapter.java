@@ -17,7 +17,7 @@
  * MA 02110-1301, USA.
  */
 
-package org.kiwix.kiwixmobile.library;
+package org.kiwix.kiwixmobile.zim_manager.library_view;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -35,11 +35,11 @@ import com.google.common.collect.ImmutableList;
 
 import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.R;
-import org.kiwix.kiwixmobile.database.BookDao;
+import org.kiwix.kiwixmobile.Zim;
+import org.kiwix.kiwixmobile.database.LocalZimDao;
 import org.kiwix.kiwixmobile.database.NetworkLanguageDao;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.zim_manager.library_view.entity.LibraryNetworkEntity.Book;
 import org.kiwix.kiwixmobile.utils.BookUtils;
-import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryFragment;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -78,7 +78,7 @@ public class LibraryAdapter extends BaseAdapter {
   @Inject
   NetworkLanguageDao networkLanguageDao;
   @Inject
-  BookDao bookDao;
+  LocalZimDao localZimDao;
 
   public LibraryAdapter(Context context) {
     super();
@@ -237,13 +237,13 @@ public class LibraryAdapter extends BaseAdapter {
   private class BookFilter extends Filter {
     @Override
     protected FilterResults performFiltering(CharSequence s) {
-      ArrayList<Book> books = bookDao.getBooks();
+      ArrayList<Zim> zims = localZimDao.getZims();
       listItems.clear();
       if (s.length() == 0) {
         // TODO: check we are nto currently downloading
         List<Book> selectedLanguages = Observable.fromIterable(allBooks)
             .filter(LibraryAdapter.this::languageActive)
-            .filter(book -> !books.contains(book))
+            .filter(book -> !zims.contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .toList()
@@ -251,7 +251,7 @@ public class LibraryAdapter extends BaseAdapter {
 
         List<Book> unselectedLanguages = Observable.fromIterable(allBooks)
             .filter(book -> !languageActive(book))
-            .filter(book -> !books.contains(book))
+            .filter(book -> !zims.contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .toList()
@@ -264,7 +264,7 @@ public class LibraryAdapter extends BaseAdapter {
       } else {
         List<Book> selectedLanguages = Observable.fromIterable(allBooks)
             .filter(LibraryAdapter.this::languageActive)
-            .filter(book -> !books.contains(book))
+            .filter(book -> !zims.contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .flatMap(book -> getMatches(book, s.toString()))
@@ -275,7 +275,7 @@ public class LibraryAdapter extends BaseAdapter {
 
         List<Book> unselectedLanguages = Observable.fromIterable(allBooks)
             .filter(book -> !languageActive(book))
-            .filter(book -> !books.contains(book))
+            .filter(book -> !zims.contains(book))
             .filter(book -> !LibraryFragment.downloadingBooks.contains(book))
             .filter(book -> !book.url.contains("/stack_exchange/")) // Temp filter see #694
             .flatMap(book -> getMatches(book, s.toString()))
@@ -387,7 +387,6 @@ public class LibraryAdapter extends BaseAdapter {
 
   // Decode and create a Bitmap from the 64-Bit encoded favicon string
   public static Bitmap createBitmapFromEncodedString(String encodedString, Context context) {
-
     try {
       byte[] decodedString = Base64.decode(encodedString, Base64.DEFAULT);
       return BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);

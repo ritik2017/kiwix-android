@@ -27,9 +27,9 @@ import com.yahoo.squidb.data.adapter.SQLiteDatabaseWrapper;
 import com.yahoo.squidb.sql.Table;
 
 import org.kiwix.kiwixmobile.ZimContentProvider;
-import org.kiwix.kiwixmobile.database.entity.BookDatabaseEntity;
 import org.kiwix.kiwixmobile.database.entity.Bookmarks;
 import org.kiwix.kiwixmobile.database.entity.LibraryDatabaseEntity;
+import org.kiwix.kiwixmobile.database.entity.LocalZimDatabaseEntity;
 import org.kiwix.kiwixmobile.database.entity.NetworkLanguageDatabaseEntity;
 import org.kiwix.kiwixmobile.database.entity.RecentSearch;
 import org.kiwix.kiwixmobile.utils.UpdateUtils;
@@ -48,7 +48,7 @@ import static org.kiwix.kiwixmobile.utils.Constants.TAG_KIWIX;
 @Singleton
 public class KiwixDatabase extends SquidDatabase {
 
-  private static final int VERSION = 15;
+  private static final int VERSION = 17;
   private Context context;
 
   @Inject
@@ -65,7 +65,7 @@ public class KiwixDatabase extends SquidDatabase {
   @Override
   protected Table[] getTables() {
     return new Table[]{
-        BookDatabaseEntity.TABLE,
+        LocalZimDatabaseEntity.TABLE,
         LibraryDatabaseEntity.TABLE,
         RecentSearch.TABLE,
         Bookmarks.TABLE,
@@ -92,10 +92,6 @@ public class KiwixDatabase extends SquidDatabase {
     }
     if (newVersion >= 5 && oldVersion < 5) {
       db.execSQL("DROP TABLE IF EXISTS book");
-      tryCreateTable(BookDatabaseEntity.TABLE);
-    }
-    if (newVersion >= 5) {
-      tryCreateTable(BookDatabaseEntity.TABLE);
     }
     if (newVersion >= 6 && oldVersion < 6) {
       db.execSQL("DROP TABLE IF EXISTS Bookmarks");
@@ -107,7 +103,6 @@ public class KiwixDatabase extends SquidDatabase {
     }
     if (newVersion >= 9) {
       db.execSQL("DROP TABLE IF EXISTS book");
-      tryCreateTable(BookDatabaseEntity.TABLE);
     }
     if (newVersion >= 10) {
       tryCreateTable(NetworkLanguageDatabaseEntity.TABLE);
@@ -119,19 +114,15 @@ public class KiwixDatabase extends SquidDatabase {
     if (newVersion >= 11) {
       tryCreateTable(RecentSearch.TABLE);
     }
-    if (newVersion >= 12) {
-      tryAddColumn(BookDatabaseEntity.REMOTE_URL);
-    }
     if (newVersion >= 13) {
-      tryAddColumn(BookDatabaseEntity.NAME);
       tryAddColumn(Bookmarks.ZIM_NAME);
-    }
-    if (newVersion >= 14 && oldVersion < 14) {
-      tryDropTable(BookDatabaseEntity.TABLE);
-      tryCreateTable(BookDatabaseEntity.TABLE);
     }
     if (newVersion >= 15 && oldVersion < 15) {
       reformatBookmarks();
+    }
+    if (oldVersion < 17) {
+      db.execSQL("DROP TABLE IF EXISTS books");
+      tryCreateTable(LocalZimDatabaseEntity.TABLE);
     }
     return true;
   }

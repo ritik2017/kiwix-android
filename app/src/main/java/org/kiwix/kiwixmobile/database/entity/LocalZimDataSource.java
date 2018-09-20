@@ -21,10 +21,10 @@ package org.kiwix.kiwixmobile.database.entity;
 
 import com.yahoo.squidb.annotations.TableModelSpec;
 
-@TableModelSpec(className = "BookDatabaseEntity", tableName = "book")
-public class BookDataSource {
+@TableModelSpec(className = "LocalZimDatabaseEntity", tableName = "localzims")
+public class LocalZimDataSource {
 
-  public String bookId;
+  public String zimId;
 
   public String title;
 
@@ -32,7 +32,7 @@ public class BookDataSource {
 
   public String language;
 
-  public String bookCreator;
+  public String zimCreator;
 
   public String publisher;
 
@@ -40,17 +40,21 @@ public class BookDataSource {
 
   public String url;
 
-  public String remoteUrl;
+  public long articleCount;
 
-  public String articleCount;
+  public long mediaCount;
 
-  public String mediaCount;
-
-  public String size;
+  public long size;
 
   public String favicon;
 
+  public String faviconMimeType;
+
   public String name;
+
+  public String tags;
+
+  public String localPath;
 
   public boolean downloaded;
 

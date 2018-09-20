@@ -30,7 +30,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.kiwix.kiwixmobile.R;
-import org.kiwix.kiwixmobile.library.LibraryAdapter;
+import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryAdapter;
 import org.kiwix.kiwixmobile.utils.LanguageUtils;
 
 import java.util.List;

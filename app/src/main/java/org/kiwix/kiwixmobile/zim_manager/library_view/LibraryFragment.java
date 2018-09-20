@@ -19,16 +19,13 @@ package org.kiwix.kiwixmobile.zim_manager.library_view;
 
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -46,18 +43,12 @@ import android.widget.Toast;
 import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.KiwixMobileActivity;
 import org.kiwix.kiwixmobile.R;
-import org.kiwix.kiwixmobile.base.BaseActivity;
 import org.kiwix.kiwixmobile.base.BaseFragment;
-import org.kiwix.kiwixmobile.downloader.KiwixDownloadService;
-import org.kiwix.kiwixmobile.library.LibraryAdapter;
-import org.kiwix.kiwixmobile.utils.NetworkUtils;
 import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
-import org.kiwix.kiwixmobile.utils.StorageUtils;
 import org.kiwix.kiwixmobile.utils.StyleUtils;
 import org.kiwix.kiwixmobile.utils.TestingUtils;
 import org.kiwix.kiwixmobile.zim_manager.ZimManageActivity;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,8 +61,7 @@ import eu.mhutti1.utils.storage.StorageDevice;
 import eu.mhutti1.utils.storage.support.StorageSelectDialog;
 
 import static android.view.View.GONE;
-import static org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
-import static org.kiwix.kiwixmobile.utils.Constants.EXTRA_BOOK;
+import static org.kiwix.kiwixmobile.zim_manager.library_view.entity.LibraryNetworkEntity.Book;
 
 public class LibraryFragment extends BaseFragment
     implements AdapterView.OnItemClickListener, StorageSelectDialog.OnSelectListener, LibraryViewCallback {
@@ -135,7 +125,6 @@ public class LibraryFragment extends BaseFragment
     faActivity.registerReceiver(networkBroadcastReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
     isReceiverRegistered = true;
 
-    presenter.loadRunningDownloadsFromDb();
     return llLayout;
   }
 
@@ -240,6 +229,8 @@ public class LibraryFragment extends BaseFragment
   @Override
   public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
     if (!libraryAdapter.isDivider(position)) {
+      books.remove(parent.getAdapter().getItem(position));
+      libraryAdapter.notifyDataSetChanged();
       presenter.zimClick((Book) (parent.getAdapter().getItem(position)));
     }
   }

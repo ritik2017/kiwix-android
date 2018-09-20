@@ -24,8 +24,8 @@ import com.yahoo.squidb.sql.Query;
 
 import javax.inject.Inject;
 import org.kiwix.kiwixmobile.database.entity.NetworkLanguageDatabaseEntity;
-import org.kiwix.kiwixmobile.library.LibraryAdapter;
-import org.kiwix.kiwixmobile.library.LibraryAdapter.Language;
+import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryAdapter;
+import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryAdapter.Language;
 
 import java.util.ArrayList;
 import java.util.Collections;

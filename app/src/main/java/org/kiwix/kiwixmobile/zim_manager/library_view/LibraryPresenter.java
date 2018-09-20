@@ -17,23 +17,19 @@
  */
 package org.kiwix.kiwixmobile.zim_manager.library_view;
 
-import android.app.FragmentManager;
-import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.support.design.widget.Snackbar;
 import android.util.Log;
 
-import android.widget.Toast;
 import java.io.File;
-import org.kiwix.kiwixmobile.R;
+import java.util.Collections;
 import org.kiwix.kiwixmobile.Zim;
-import org.kiwix.kiwixmobile.base.BasePresenter;
-import org.kiwix.kiwixmobile.database.BookDao;
+import org.kiwix.kiwixmobile.base.BaseFragmentActivityPresenter;
+import org.kiwix.kiwixmobile.base.BaseFragmentPresenter;
+import org.kiwix.kiwixmobile.database.LocalZimDao;
 import org.kiwix.kiwixmobile.downloader.KiwixDownloadService;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.zim_manager.library_view.entity.LibraryNetworkEntity.Book;
 import org.kiwix.kiwixmobile.network.KiwixLibraryService;
 
 import javax.inject.Inject;
@@ -42,24 +38,28 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import org.kiwix.kiwixmobile.utils.NetworkUtils;
 import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
 import org.kiwix.kiwixmobile.utils.StorageUtils;
+import org.kiwix.kiwixmobile.zim_manager.ZimManagePresenter;
 
 /**
  * Created by EladKeyshawn on 06/04/2017.
  */
 
-public class LibraryPresenter extends BasePresenter<LibraryViewCallback> {
+public class LibraryPresenter extends BaseFragmentPresenter<LibraryViewCallback> {
 
   @Inject
   KiwixLibraryService kiwixLibraryService;
 
   @Inject
-  BookDao bookDao;
+  LocalZimDao localZimDao;
 
   @Inject
   SharedPreferenceUtil sharedPreferences;
 
   @Inject
   ConnectivityManager connectivityManager;
+
+  @Inject
+  ZimManagePresenter zimManagePresenter;
 
   @Inject
   public LibraryPresenter() {
@@ -106,13 +106,16 @@ public class LibraryPresenter extends BasePresenter<LibraryViewCallback> {
 
   // TODO: Implement
   private void downloadFile(Book book) {
+    book.size = "0";
     Intent service = new Intent(getContext(), KiwixDownloadService.class);
-    service.putExtra(KiwixDownloadService.SELECTED_ZIM, new Zim(book, new File(sharedPreferences.getPrefStorage() + "/Kiwix/" + StorageUtils.getFileNameFromUrl(book.getUrl()))));
+    Zim zimToDownload = new Zim(book, new File(sharedPreferences.getPrefStorage() + "/Kiwix/" + StorageUtils.getFileNameFromUrl(book.getUrl())), false);
+    service.putExtra(KiwixDownloadService.SELECTED_ZIM, zimToDownload);
     service.setAction(KiwixDownloadService.DOWNLOAD);
     getContext().startService(service);
 
     getMvpView().displayDownloadStartedToast();
     getMvpView().refreshLibrary();
+    zimManagePresenter.addDownloadingZim(zimToDownload);
   }
 
   private boolean networkUsageAuthorised() {
@@ -134,9 +137,11 @@ public class LibraryPresenter extends BasePresenter<LibraryViewCallback> {
   }
 
   public void refreshLibrary() {
-
+    getMvpView().refreshLibrary();
   }
 
-  public void loadRunningDownloadsFromDb() {
+  @Override
+  public BaseFragmentActivityPresenter getBaseFragmentActivity() {
+    return zimManagePresenter;
   }
 }

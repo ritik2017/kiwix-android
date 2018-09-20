@@ -29,7 +29,7 @@ import android.util.Log;
 
 import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.ZimContentProvider;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
+import org.kiwix.kiwixmobile.zim_manager.library_view.entity.LibraryNetworkEntity;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -38,7 +38,7 @@ import java.util.Vector;
 
 import eu.mhutti1.utils.storage.StorageDevice;
 import eu.mhutti1.utils.storage.StorageDeviceUtils;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.zim_manager.library_view.entity.LibraryNetworkEntity.Book;
 
 import static org.kiwix.kiwixmobile.utils.Constants.TAG_KIWIX;
 
@@ -107,7 +107,7 @@ public class FileSearch {
   }
 
   // Scan through the file system and find all the files with .zim and .zimaa extensions
-  public void scanFileSystem(String defaultPath) {
+  public synchronized void scanFileSystem(String defaultPath) {
     FilenameFilter[] filter = new FilenameFilter[zimFiles.length];
 
     // Search all external directories that we can find.
@@ -173,7 +173,7 @@ public class FileSearch {
     return files.toArray(arr);
   }
 
-  public static synchronized Zim fileToZim(String filePath) {
+  public static Zim fileToZim(String filePath) {
     Book book = null;
 
     if (ZimContentProvider.zimFileName != null) {
@@ -182,6 +182,7 @@ public class FileSearch {
     // Check a file isn't being opened and temporally use content provider to access details
     // This is not a great solution as we shouldn't need to fully open our ZIM files to get their metadata
     if (ZimContentProvider.canIterate) {
+      ZimContentProvider.JNIReaderLock.lock();
       if (ZimContentProvider.setZimFile(filePath) != null) {
         try {
           book = new LibraryNetworkEntity.Book();
@@ -199,6 +200,7 @@ public class FileSearch {
           // TODO 20171215 Consider more elegant approaches.
           // This is to see if we can catch the exception at all!
           Log.e("kiwix-filesearch", "Problem parsing a book entry from the library file. ", e);
+          ZimContentProvider.JNIReaderLock.unlock();
           return null;
         }
       }
@@ -208,10 +210,11 @@ public class FileSearch {
       ZimContentProvider.setZimFile(ZimContentProvider.originalFileName);
     }
     ZimContentProvider.originalFileName = "";
+    ZimContentProvider.JNIReaderLock.unlock();
     if (book == null) {
       return null;
     }
-    return new Zim(book, new File(filePath));
+    return new Zim(book, new File(filePath), true);
   }
 
   // Fill fileList with files found in the specific directory

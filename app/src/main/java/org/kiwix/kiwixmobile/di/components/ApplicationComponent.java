@@ -21,20 +21,17 @@ import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.ZimContentProvider;
 import org.kiwix.kiwixmobile.base.BaseFragment;
-import org.kiwix.kiwixmobile.base.BasePresenter;
-import org.kiwix.kiwixmobile.base.ViewCallback;
 import org.kiwix.kiwixmobile.di.modules.ApplicationModule;
 import org.kiwix.kiwixmobile.di.modules.JNIModule;
 import org.kiwix.kiwixmobile.di.modules.NetworkModule;
 import org.kiwix.kiwixmobile.downloader.KiwixDownloadService;
-import org.kiwix.kiwixmobile.library.LibraryAdapter;
+import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryAdapter;
 import org.kiwix.kiwixmobile.network.KiwixLibraryService;
 import org.kiwix.kiwixmobile.settings.KiwixSettingsActivity;
 import org.kiwix.kiwixmobile.views.AutoCompleteAdapter;
 import org.kiwix.kiwixmobile.views.web.KiwixWebView;
 import org.kiwix.kiwixmobile.zim_manager.fileselect_view.LocalZimAdapter;
 import org.kiwix.kiwixmobile.zim_manager.fileselect_view.ZimFileSelectFragment;
-import org.kiwix.kiwixmobile.zim_manager.fileselect_view.ZimFileSelectPresenter;
 import org.kiwix.kiwixmobile.zim_manager.library_view.LibraryFragment;
 
 import javax.inject.Singleton;
@@ -71,8 +68,6 @@ public interface ApplicationComponent {
   void inject(Zim zim);
 
   void inject(KiwixDownloadService kiwixDownloadService);
-
-  void inject(ZimFileSelectPresenter zimFileSelectPresenter);
 
   void inject(LocalZimAdapter localZimAdapter);
 }

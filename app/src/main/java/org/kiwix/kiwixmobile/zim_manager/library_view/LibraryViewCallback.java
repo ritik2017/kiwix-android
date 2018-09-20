@@ -18,8 +18,7 @@
 package org.kiwix.kiwixmobile.zim_manager.library_view;
 
 import org.kiwix.kiwixmobile.base.ViewCallback;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.zim_manager.library_view.entity.LibraryNetworkEntity.Book;
 
 import java.util.LinkedList;
 

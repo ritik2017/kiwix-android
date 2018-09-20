@@ -19,23 +19,16 @@
 
 package org.kiwix.kiwixmobile.zim_manager.fileselect_view;
 
-import android.Manifest;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,27 +38,17 @@ import org.kiwix.kiwixmobile.R;
 import org.kiwix.kiwixmobile.Zim;
 import org.kiwix.kiwixmobile.ZimContentProvider;
 import org.kiwix.kiwixmobile.base.BaseFragment;
-import org.kiwix.kiwixmobile.database.BookDao;
-import org.kiwix.kiwixmobile.library.LibraryAdapter;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity;
+import org.kiwix.kiwixmobile.database.LocalZimDao;
 import org.kiwix.kiwixmobile.utils.BookUtils;
 import org.kiwix.kiwixmobile.utils.LanguageUtils;
 import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
-import org.kiwix.kiwixmobile.utils.TestingUtils;
-import org.kiwix.kiwixmobile.utils.files.FileSearch;
-import org.kiwix.kiwixmobile.utils.files.FileUtils;
 import org.kiwix.kiwixmobile.zim_manager.ZimManageActivity;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 import javax.inject.Inject;
+import org.kiwix.kiwixmobile.zim_manager.fileselect_view.LocalZimAdapter.ViewHolder;
 
-import static org.kiwix.kiwixmobile.utils.Constants.REQUEST_STORAGE_PERMISSION;
-import static org.kiwix.kiwixmobile.utils.NetworkUtils.parseURL;
 import static org.kiwix.kiwixmobile.utils.StyleUtils.dialogStyle;
 
 public class ZimFileSelectFragment extends BaseFragment
@@ -82,7 +65,7 @@ public class ZimFileSelectFragment extends BaseFragment
   @Inject BookUtils bookUtils;
   @Inject SharedPreferenceUtil sharedPreferenceUtil;
   @Inject
-  BookDao bookDao;
+  LocalZimDao bookDao;
 
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -108,12 +91,12 @@ public class ZimFileSelectFragment extends BaseFragment
   }
 
   private void refreshFragment() {
-    presenter.loadLocalZimFiles();
+    presenter.showZims();
   }
 
   @Override
   public void onResume() {
-    presenter.loadLocalZimFiles();
+    presenter.showZims();
     super.onResume();
   }
 
@@ -185,6 +168,20 @@ public class ZimFileSelectFragment extends BaseFragment
           // do nothing
         })
         .show();
+  }
+
+  @Override
+  public void updateProgressBar(Zim zim, int progress) {
+    ViewGroup viewGroup = (ViewGroup) zimFileListView.findViewWithTag(new ViewHolder(zim.getId()));
+    if (viewGroup == null) {
+      return;
+    }
+    ProgressBar downloadProgress = viewGroup.findViewById(R.id.downloadProgress);
+    downloadProgress.setProgress(progress);
+//    TextView timeRemaining = viewGroup.findViewById(R.id.time_remaining);
+//    int secLeft = LibraryFragment.mService.timeRemaining.get(mKeys[position], -1);
+//    if (secLeft != -1)
+//      timeRemaining.setText(toHumanReadableTime(secLeft));
   }
 
   @Override

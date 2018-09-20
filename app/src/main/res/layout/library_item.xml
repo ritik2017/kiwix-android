@@ -45,8 +45,8 @@
     <LinearLayout
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
-      android:orientation="horizontal"
-      android:paddingTop="@dimen/dimen_medium_padding">
+      android:paddingTop="@dimen/dimen_medium_padding"
+      android:orientation="horizontal">
 
       <LinearLayout
         android:layout_width="0dp"
@@ -59,21 +59,21 @@
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="File Size"
-          android:textAppearance="?android:attr/textAppearanceSmall" />
+          android:textAppearance="?android:attr/textAppearanceSmall"/>
 
         <TextView
           android:id="@+id/creator"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="Author"
-          android:textAppearance="?android:attr/textAppearanceSmall" />
+          android:textAppearance="?android:attr/textAppearanceSmall"/>
 
         <TextView
           android:id="@+id/publisher"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="Publisher"
-          android:textAppearance="?android:attr/textAppearanceSmall" />
+          android:textAppearance="?android:attr/textAppearanceSmall"/>
 
       </LinearLayout>
 
@@ -89,24 +89,74 @@
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="Date"
-          android:textAppearance="?android:attr/textAppearanceSmall" />
+          android:textAppearance="?android:attr/textAppearanceSmall"/>
 
         <TextView
           android:id="@+id/language"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
           android:text="Language"
-          android:textAppearance="?android:attr/textAppearanceSmall" />
+          android:textAppearance="?android:attr/textAppearanceSmall"/>
 
         <TextView
           android:id="@+id/fileName"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
+          android:gravity="right"
           android:text="File Name"
-          android:textAppearance="?android:attr/textAppearanceSmall" />
+          android:textAppearance="?android:attr/textAppearanceSmall"/>
 
       </LinearLayout>
 
+    </LinearLayout>
+    <LinearLayout
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:layout_weight="1"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentRight="true"
+      android:orientation="horizontal">
+
+      <ProgressBar
+        android:id="@+id/downloadProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="182dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.5"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:padding="@dimen/download_progress_padding"
+        android:indeterminate="false"
+        android:visibility="gone"/>
+      <ImageView
+        android:id="@+id/pause"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.5"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="center_vertical"
+        android:minHeight="@dimen/pause_min_height"
+        android:minWidth="@dimen/pause_min_width"
+        android:src="@drawable/ic_pause_black_24dp"
+        android:text="@string/download_pause"
+        android:visibility="gone"/>
+
+      <ImageView
+        android:id="@+id/stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.5"
+        android:layout_marginLeft="@dimen/stop_horizontal_margin"
+        android:layout_marginRight="@dimen/stop_horizontal_margin"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_gravity="center_vertical"
+        android:minHeight="@dimen/stop_min_height"
+        android:minWidth="@dimen/stop_min_width"
+        android:src="@drawable/ic_stop_black_24dp"
+        android:text="@string/download_stop"
+        android:visibility="gone"/>
     </LinearLayout>
   </LinearLayout>
 

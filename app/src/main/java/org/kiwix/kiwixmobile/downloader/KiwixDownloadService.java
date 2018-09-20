@@ -1,7 +1,5 @@
 package org.kiwix.kiwixmobile.downloader;
 
-import android.app.IntentService;
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -11,27 +9,18 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import io.reactivex.schedulers.Schedulers;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Observable;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.kiwix.kiwixmobile.KiwixApplication;
 import org.kiwix.kiwixmobile.R;
 import org.kiwix.kiwixmobile.Zim;
-import org.kiwix.kiwixmobile.library.entity.LibraryNetworkEntity.Book;
+import org.kiwix.kiwixmobile.database.LocalZimDao;
 import org.kiwix.kiwixmobile.network.KiwixLibraryService;
 import org.kiwix.kiwixmobile.utils.Constants;
 import org.kiwix.kiwixmobile.utils.SharedPreferenceUtil;
+import org.kiwix.kiwixmobile.zim_manager.ZimManagePresenter;
 
 public class KiwixDownloadService extends Service {
 
@@ -59,6 +48,12 @@ public class KiwixDownloadService extends Service {
 
   @Inject
   NotificationManager notificationManager;
+
+  @Inject
+  LocalZimDao localZimDao;
+
+  @Inject
+  ZimManagePresenter zimManagePresenter;
 
   private static KiwixDownloadService getRunningService() {
     return kiwixDownloadService;
@@ -106,15 +101,17 @@ public class KiwixDownloadService extends Service {
 
     zim.getDownloadUrl(kiwixLibraryService)
         .subscribeOn(Schedulers.from(downloadExecutor))
-        .flatMap(u -> zim.getTrueSize(okHttpClient))
+        .flatMap(u -> zim.calculateSize(okHttpClient))
         .flatMap(u -> io.reactivex.Observable.fromIterable(zim.getChunks()))
         .concatMap(c -> c.download(okHttpClient))
         .distinctUntilChanged().doOnComplete(() -> {
           notificationManager.cancel(zim.getDownloadId());
           notificationManager.notify(zim.getDownloadId(), notifications.get(zim).setOngoing(false).setProgress(0, 0, false).build());
+          zimManagePresenter.completeDownload(zim);
         })
         .subscribe(progress -> {
           notificationManager.notify(zim.getDownloadId(), notifications.get(zim).setProgress(100, progress, false).build());
+          zimManagePresenter.setProgress(zim, progress);
         });
   }
 

@@ -29,6 +29,8 @@ import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.kiwix.kiwixlib.JNIKiwix;
 import org.kiwix.kiwixlib.JNIKiwixException;
 import org.kiwix.kiwixlib.JNIKiwixInt;
@@ -73,7 +75,9 @@ public class ZimContentProvider extends ContentProvider {
   @Inject
   public JNIKiwix jniKiwix;
 
-  public static JNIKiwixReader currentJNIReader;
+  private static JNIKiwixReader currentJNIReader;
+
+  public static final Lock JNIReaderLock = new ReentrantLock();
 
   public static JNIKiwixSearcher jniSearcher;
 
