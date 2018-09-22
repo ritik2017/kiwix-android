@@ -29,6 +29,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okio.BufferedSource;
+import org.kiwix.kiwixmobile.Zim.DownloadStatus.DownloadTerminated;
 import org.kiwix.kiwixmobile.database.LocalZimDao;
 import org.kiwix.kiwixmobile.database.entity.LocalZimDatabaseEntity;
 import org.kiwix.kiwixmobile.downloader.KiwixDownloadService;
@@ -42,7 +43,7 @@ public class Zim implements Serializable {
   public static final long CHUNK_SIZE = 1024L * 1024L * 1024L * 2L;
   private static final String ACTION_TOGGLE_DOWNLOAD = "toggle_download";
   private static final String ACTION_STOP = "stop_download";
-  private static final String DOWNLOAD_ID_EXTRA = "download_id";
+  public static final String DOWNLOAD_ID_EXTRA = "download_id";
   private static int DOWNLOAD_ID = 1000;
 
   private final String id;
@@ -67,6 +68,7 @@ public class Zim implements Serializable {
   private String downloadUrl;
   private int downloadId = DOWNLOAD_ID++;
   private boolean isDownloaded;
+  private int downloadStatus;
 
   @Inject
   transient LocalZimDao localZimDao;
@@ -96,6 +98,7 @@ public class Zim implements Serializable {
     this.size = tryParseLong(book.getSize());
     this.localFile = localFile;
     this.isDownloaded = isDownloaded;
+    this.downloadStatus = DownloadStatus.PLAY;
   }
 
   public Zim(SquidCursor<LocalZimDatabaseEntity> localZimDatabaseEntity) {
@@ -117,6 +120,7 @@ public class Zim implements Serializable {
     this.size = localZimDatabaseEntity.get(LocalZimDatabaseEntity.SIZE);
     this.localFile = new File(localZimDatabaseEntity.get(LocalZimDatabaseEntity.LOCAL_PATH));
     this.isDownloaded = localZimDatabaseEntity.get(LocalZimDatabaseEntity.DOWNLOADED);
+    this.downloadStatus = localZimDatabaseEntity.get(LocalZimDatabaseEntity.DOWNLOAD_STATUS);
     updateDownloadedStatus();
   }
 
@@ -139,6 +143,7 @@ public class Zim implements Serializable {
     localZimDatabaseEntity.setSize(getSize());
     localZimDatabaseEntity.setLocalPath(getFilePath());
     localZimDatabaseEntity.setIsDownloaded(isDownloaded);
+    localZimDatabaseEntity.setDownloadStatus(downloadStatus);
     return localZimDatabaseEntity;
   }
 
@@ -223,6 +228,10 @@ public class Zim implements Serializable {
       throw new NullPointerException();
     }
     return downloadUrl;
+  }
+
+  public boolean isStopped() {
+    return downloadStatus == DownloadStatus.STOP;
   }
 
   public Observable<Long> calculateSize(OkHttpClient okHttpClient) {
@@ -324,6 +333,18 @@ public class Zim implements Serializable {
     return isDownloaded;
   }
 
+  public void stopDownload() {
+    downloadStatus = DownloadStatus.STOP;
+  }
+
+  public void toggleDownload() {
+    if (downloadStatus == DownloadStatus.PLAY) {
+      downloadStatus = DownloadStatus.PAUSE;
+    } else if (downloadStatus == DownloadStatus.PAUSE) {
+      downloadStatus = DownloadStatus.PLAY;
+    }
+  }
+
   public class Chunk {
 
     private final long startByte;
@@ -405,11 +426,12 @@ public class Zim implements Serializable {
         while (output.length() != chunkSize) {
           try {
             while ((readBytes = source.read(buffer)) > 0) {
-//              while (KiwixDownloadService.paused) {
-//                if (KiwixDownloadService.stopped) {
-//                  return;
-//                }
-//              }
+              while (downloadStatus != DownloadStatus.PLAY) {
+                if (downloadStatus == DownloadStatus.STOP) {
+                  subscriber.onComplete();
+                  return;
+                }
+              }
               output.write(buffer, 0, readBytes);
               downloaded += readBytes;
               subscriber.onNext((int) ((100 * downloaded / chunkSize)));
@@ -457,5 +479,16 @@ public class Zim implements Serializable {
 
   public void delete() {
     FileUtils.deleteZimFile(localFile);
+    localZimDao.deleteZim(this.getId());
+  }
+
+  public static class DownloadStatus {
+    public static final int PLAY = 0;
+    public static final int PAUSE = 1;
+    public static final int STOP = 2;
+
+    public static class DownloadTerminated extends RuntimeException {
+
+    }
   }
 }

@@ -138,6 +138,9 @@ public class ZimFileSelectPresenter extends BaseFragmentPresenter<ZimFileSelectV
     getMvpView().setListViewAdapter(localZimAdapter);
     checkEmpty();
 
+    Log.w("Kiwix", Log.getStackTraceString(new Exception()));
+
+
     new FileSearch(getContext(), new ResultListener() {
       @Override
       public void onZimFound(Zim zim) {
@@ -184,7 +187,7 @@ public class ZimFileSelectPresenter extends BaseFragmentPresenter<ZimFileSelectV
       case REQUEST_STORAGE_PERMISSION: {
         if (grantResults.length > 0
             && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          getFiles();
+          // Files are refreshed by onResume();
         } else if (grantResults.length != 0) {
           getMvpView().finishActivity();
         }
@@ -199,6 +202,11 @@ public class ZimFileSelectPresenter extends BaseFragmentPresenter<ZimFileSelectV
 
   public void completeDownload(Zim zim) {
     getMvpView().runOnUiThread(() -> localZimAdapter.notifyDataSetChanged());
+  }
+
+  public void stopDownload(Zim zim) {
+    localZims.remove(zim);
+    localZimAdapter.notifyDataSetChanged();
   }
 
   private class ZimComparator implements Comparator<Zim> {

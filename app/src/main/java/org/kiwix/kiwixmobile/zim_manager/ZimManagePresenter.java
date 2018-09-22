@@ -74,6 +74,13 @@ public class ZimManagePresenter extends BaseFragmentActivityPresenter<ZimManageV
     }
   }
 
+  public void stopDownload(Zim zim) {
+    ZimFileSelectPresenter zimFileSelectPresenter = (ZimFileSelectPresenter) getFragmentPresenter(ZimFileSelectPresenter.class);
+    if (zimFileSelectPresenter != null) {
+      zimFileSelectPresenter.stopDownload(zim);
+    }
+  }
+
   // TODO: Fix this
 //  void showNoWifiWarning(Context context, String action) {
 //    if (DownloadService.ACTION_NO_WIFI.equals(action)) {

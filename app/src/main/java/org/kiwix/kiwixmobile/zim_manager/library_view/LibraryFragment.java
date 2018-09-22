@@ -229,9 +229,10 @@ public class LibraryFragment extends BaseFragment
   @Override
   public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
     if (!libraryAdapter.isDivider(position)) {
-      books.remove(parent.getAdapter().getItem(position));
-      libraryAdapter.notifyDataSetChanged();
-      presenter.zimClick((Book) (parent.getAdapter().getItem(position)));
+      Book book = (Book) libraryAdapter.getItem(position);
+      downloadingBooks.add(book);
+      refreshLibrary();
+      presenter.zimClick(book);
     }
   }
 

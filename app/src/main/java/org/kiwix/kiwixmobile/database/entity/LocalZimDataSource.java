@@ -58,4 +58,5 @@ public class LocalZimDataSource {
 
   public boolean downloaded;
 
+  public int downloadStatus;
 }
